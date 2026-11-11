@@ -30,7 +30,7 @@ signed SHA-256 checksum so the store rejects bytes that don't match.
 
 | Store | Notes |
 |---|---|
-| SeaweedFS, Garage, AWS S3, Cloudflare R2 | Checksums supported. |
+| SeaweedFS 4.48+, Garage, AWS S3, Cloudflare R2 | Checksums supported. SeaweedFS 3.x accepts mismatched bytes: use 4.48 or later (tested in CI). |
 | Backblaze B2 | Rejects checksum headers: set `CADENZA_S3_CHECKSUM=none`. The server still checks each file's size. |
 | MinIO | The community edition is archived (2026); prefer another store. |
 

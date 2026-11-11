@@ -76,6 +76,33 @@ jobs:
           CADENZA_TEST_POSTGRES: postgres://postgres:cadenza@localhost:5432/cadenza?sslmode=disable
         run: go test -race ./internal/adapter/sqlstore/...
 
+  s3:
+    name: Go S3 adapter on a real store (SeaweedFS)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Start SeaweedFS
+        run: |
+          cat > /tmp/s3.json <<'JSON'
+          {"identities":[{"name":"ci","credentials":[{"accessKey":"cikey","secretKey":"cisecret123"}],"actions":["Admin","Read","Write","List","Tagging"]}]}
+          JSON
+          docker run -d --name s3 -p 8333:8333 -v /tmp/s3.json:/s3.json:ro chrislusf/seaweedfs:4.48 server -s3 -s3.config=/s3.json
+          for i in $(seq 1 60); do curl -s -o /dev/null localhost:8333 && break; sleep 1; done
+          sleep 3
+          docker exec s3 sh -c 'echo "s3.bucket.create -name cadenza" | weed shell'
+      - name: Test against SeaweedFS
+        env:
+          CADENZA_TEST_S3_ENDPOINT: http://localhost:8333
+          CADENZA_TEST_S3_REGION: us-east-1
+          CADENZA_TEST_S3_BUCKET: cadenza
+          CADENZA_TEST_S3_ACCESS_KEY: cikey
+          CADENZA_TEST_S3_SECRET_KEY: cisecret123
+        run: go test -count=1 -run RealStore -v ./internal/adapter/s3
+
   web:
     name: Web test, typecheck & build
     runs-on: ubuntu-latest
