@@ -83,5 +83,13 @@ The app follows window size classes (`src/lib/layout.ts`): compact under 600 dp,
   place (`plugins/large-screens.js` sets `configChanges` and `resizeableActivity`), so the open thread stays open.
 
 Checked on the emulator at phone, Fold inner (portrait and landscape), Fold cover and tablet (portrait and
-landscape) sizes, including density changes, with the thread staying open and the process never restarting. Not
-covered: a real Fold's hinge, half-folded postures (tabletop/book) and moving between two physical displays.
+landscape) sizes, including density changes, with the thread staying open and the process never restarting.
+
+Also checked on the emulator's 7.6" fold-in foldable profile with the v0.1.2 release APK: device states CLOSED,
+HALF_OPENED and OPENED (via `cmd device_state`) in portrait and landscape keep the process running and the open
+thread open. That profile has a single display, so the switch to a separate cover screen was covered with size and
+density changes instead.
+
+Known gap: in the half-opened "book" posture the split between the two panes is not aligned with the hinge, so the
+thread pane can cross the fold. Aligning it needs the hinge position (Jetpack WindowManager's FoldingFeature) from a
+native module. Not covered at all without hardware: real performance and a real Galaxy Z Fold's two displays.
