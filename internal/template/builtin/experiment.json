@@ -1,0 +1,91 @@
+{
+  "name": "experiment",
+  "use_for": "Trying an idea: hypothesis, result, conclusion.",
+  "guide": "Use this when you tried something to learn whether it works.\n\n- **hypothesis**: what you expected and why, in one sentence.\n- **setup**: what you changed and what you kept the same.\n- **results**: a chart of what happened.\n- **numbers**: key numbers from the run.\n- **conclusion**: was the hypothesis right? Be honest about weak results.\n- **next_step**: what you suggest doing now.",
+  "slots": [
+    {
+      "name": "hypothesis",
+      "block": "text",
+      "required": true,
+      "label": "Hypothesis",
+      "hint": "What you expected and why"
+    },
+    {
+      "name": "setup",
+      "block": "text",
+      "label": "Setup",
+      "hint": "What changed, what stayed the same"
+    },
+    {
+      "name": "results",
+      "block": "chart",
+      "label": "Results",
+      "hint": "Chart of what happened"
+    },
+    {
+      "name": "numbers",
+      "block": "metrics",
+      "label": "Numbers",
+      "hint": "Key numbers from the run"
+    },
+    {
+      "name": "conclusion",
+      "block": "text",
+      "required": true,
+      "label": "Conclusion",
+      "hint": "Was the hypothesis right?"
+    },
+    {
+      "name": "next_step",
+      "block": "text",
+      "label": "Next step",
+      "hint": "What to do now"
+    }
+  ],
+  "example": {
+    "hypothesis": "Caching parsed templates will cut render time by half, since parsing is 60% of the profile.",
+    "setup": "Added an LRU cache (256 entries). Same machine, same 1,000 sample pages, 5 runs each.",
+    "results": {
+      "mark": "bar",
+      "data": {
+        "values": [
+          {
+            "variant": "no cache",
+            "ms": 42
+          },
+          {
+            "variant": "cache",
+            "ms": 19
+          }
+        ]
+      },
+      "encoding": {
+        "x": {
+          "field": "variant",
+          "type": "nominal"
+        },
+        "y": {
+          "field": "ms",
+          "type": "quantitative"
+        }
+      }
+    },
+    "numbers": [
+      {
+        "label": "Median render",
+        "before": 42,
+        "value": 19,
+        "unit": "ms",
+        "good": "down"
+      },
+      {
+        "label": "Memory",
+        "before": "110 MB",
+        "value": "126 MB",
+        "good": "down"
+      }
+    ],
+    "conclusion": "Right: render time dropped 55% for a 15% memory increase.",
+    "next_step": "Ship behind a flag and watch memory on the largest tenant."
+  }
+}

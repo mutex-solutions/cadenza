@@ -1,0 +1,86 @@
+{
+  "name": "perf-compare",
+  "use_for": "Speed or size, before vs after.",
+  "guide": "Use this when you changed performance or size.\n\n- **numbers**: key numbers with both `before` and `value` (after), a `unit`, and `good` set to `down` for time or size, `up` for throughput.\n- **chart**: a Vega-Lite chart, e.g. bars for before vs after, or a line over runs.\n- **method**: how you measured: machine, data size, runs, tool. Enough to repeat it.\n- **verdict**: a callout: was it worth it?\n\nTip: measure several runs and report the median or p95, not one lucky run.",
+  "slots": [
+    {
+      "name": "numbers",
+      "block": "metrics",
+      "required": true,
+      "label": "Key numbers",
+      "hint": "Before and after, with units"
+    },
+    {
+      "name": "chart",
+      "block": "chart",
+      "label": "Chart",
+      "hint": "Vega-Lite chart of the change"
+    },
+    {
+      "name": "method",
+      "block": "text",
+      "required": true,
+      "label": "How it was measured",
+      "hint": "Machine, data, runs, tool"
+    },
+    {
+      "name": "verdict",
+      "block": "callout",
+      "label": "Verdict",
+      "hint": "Worth it or not"
+    }
+  ],
+  "example": {
+    "numbers": [
+      {
+        "label": "p95 latency",
+        "before": 340,
+        "value": 120,
+        "unit": "ms",
+        "good": "down"
+      },
+      {
+        "label": "Bundle size",
+        "before": "812 KB",
+        "value": "640 KB",
+        "good": "down"
+      }
+    ],
+    "chart": {
+      "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+      "mark": "bar",
+      "data": {
+        "values": [
+          {
+            "run": "before",
+            "ms": 340
+          },
+          {
+            "run": "after",
+            "ms": 120
+          }
+        ]
+      },
+      "encoding": {
+        "x": {
+          "field": "run",
+          "type": "nominal",
+          "sort": [
+            "before",
+            "after"
+          ]
+        },
+        "y": {
+          "field": "ms",
+          "type": "quantitative",
+          "title": "p95 ms"
+        }
+      }
+    },
+    "method": "10 runs of `k6 run search.js` (50 virtual users, 60 s) on a 4-core VM against a copy of production data. Median of p95 shown.",
+    "verdict": {
+      "tone": "success",
+      "text": "Search is almost 3× faster at p95. Worth shipping."
+    }
+  }
+}

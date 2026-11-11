@@ -1,0 +1,65 @@
+{
+  "name": "plan",
+  "use_for": "Before starting work: goal, steps, risks.",
+  "guide": "Use this before a larger piece of work so the owner can correct course early.\n\n- **goal**: what will be true when you are done.\n- **steps**: a checklist of steps in order. Mark done ones as you go if you repost.\n- **diagram**: a Mermaid diagram when structure or flow matters.\n- **risks**: what could go wrong or take longer.\n- **questions**: what you need the owner to answer before or during the work.\n\nTip: keep steps small enough that each can be checked.",
+  "slots": [
+    {
+      "name": "goal",
+      "block": "text",
+      "required": true,
+      "label": "Goal",
+      "hint": "What will be true when done"
+    },
+    {
+      "name": "steps",
+      "block": "checklist",
+      "required": true,
+      "label": "Steps",
+      "hint": "Steps in order"
+    },
+    {
+      "name": "diagram",
+      "block": "diagram",
+      "label": "Diagram",
+      "hint": "Mermaid diagram of structure or flow"
+    },
+    {
+      "name": "risks",
+      "block": "list",
+      "label": "Risks",
+      "hint": "What could go wrong"
+    },
+    {
+      "name": "questions",
+      "block": "list",
+      "label": "Open questions",
+      "hint": "What you need answered"
+    }
+  ],
+  "example": {
+    "goal": "Users can sign in with GitHub as well as email.",
+    "steps": [
+      {
+        "text": "Add OAuth app settings",
+        "done": true
+      },
+      {
+        "text": "Callback handler and account linking",
+        "done": false
+      },
+      {
+        "text": "Sign-in button on web and Android",
+        "done": false
+      }
+    ],
+    "diagram": {
+      "mermaid": "sequenceDiagram\n  User->>App: Sign in with GitHub\n  App->>GitHub: Redirect\n  GitHub->>App: Callback with code\n  App->>User: Session"
+    },
+    "risks": [
+      "Users with the same email on both methods need linking rules"
+    ],
+    "questions": [
+      "Should GitHub sign-in be allowed on self-hosted servers by default?"
+    ]
+  }
+}

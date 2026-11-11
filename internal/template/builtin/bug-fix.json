@@ -1,0 +1,60 @@
+{
+  "name": "bug-fix",
+  "use_for": "A fixed bug: symptom, cause, fix and proof.",
+  "guide": "Use this when you fixed a bug.\n\n- **symptom**: what the user saw, in their words. Include how to reproduce it.\n- **cause**: the real reason, in one short paragraph. Name the file or function.\n- **fix**: the diff that fixes it (`git diff`). Keep it to the fix; leave refactors out.\n- **proof**: test output that failed before and passes now.\n- **screenshot**: when the bug was visible, a shot of it fixed.\n- **risks**: what else the change could affect.\n\nTip: add a test that reproduces the bug before fixing it, and show its output in proof.",
+  "slots": [
+    {
+      "name": "symptom",
+      "block": "text",
+      "required": true,
+      "label": "Symptom",
+      "hint": "What the user saw and how to reproduce it"
+    },
+    {
+      "name": "cause",
+      "block": "text",
+      "required": true,
+      "label": "Cause",
+      "hint": "The real reason, naming the code"
+    },
+    {
+      "name": "fix",
+      "block": "diff",
+      "label": "Fix",
+      "hint": "The diff that fixes it"
+    },
+    {
+      "name": "proof",
+      "block": "code",
+      "label": "Proof",
+      "hint": "Test output showing the fix works"
+    },
+    {
+      "name": "screenshot",
+      "block": "image",
+      "label": "Screenshot",
+      "hint": "The fixed screen, if the bug was visible"
+    },
+    {
+      "name": "risks",
+      "block": "list",
+      "label": "Risks",
+      "hint": "What else this could affect"
+    }
+  ],
+  "example": {
+    "symptom": "Saving a profile with an emoji in the name showed *\"Something went wrong\"*. Reproduce: set name to `Ana 🌸`, press Save.",
+    "cause": "`validateName` in `profile/name.go` counted bytes, not characters, so a 4-byte emoji pushed short names over the 32 limit.",
+    "fix": {
+      "filename": "profile/name.go",
+      "diff": "--- a/profile/name.go\n+++ b/profile/name.go\n@@ -12,3 +12,3 @@ func validateName(s string) error {\n-\tif len(s) > 32 {\n+\tif utf8.RuneCountInString(s) > 32 {\n \t\treturn errTooLong\n \t}\n"
+    },
+    "proof": {
+      "language": "text",
+      "code": "=== RUN   TestValidateNameEmoji\n--- PASS: TestValidateNameEmoji (0.00s)\nok  \texample.com/app/profile\t0.012s"
+    },
+    "risks": [
+      "Names stored before the fix are unchanged"
+    ]
+  }
+}

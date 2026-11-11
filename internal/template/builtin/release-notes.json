@@ -1,0 +1,50 @@
+{
+  "name": "release-notes",
+  "use_for": "A version shipped.",
+  "guide": "Use this when a version is released.\n\n- **version**: the version number and date, e.g. \"v1.4.0 (2026-11-11)\".\n- **highlights**: 1-5 things users will notice most.\n- **changes**: everything else worth listing.\n- **breaking**: a callout (tone `warning`) for anything users must change, with what to do.\n\nTip: write for users, not for developers: \"Uploads resume after a lost connection\", not \"Add retry to uploader\".",
+  "slots": [
+    {
+      "name": "version",
+      "block": "text",
+      "required": true,
+      "label": "Version",
+      "hint": "Version and date",
+      "max": 200
+    },
+    {
+      "name": "highlights",
+      "block": "list",
+      "required": true,
+      "label": "Highlights",
+      "hint": "What users will notice most",
+      "max": 5
+    },
+    {
+      "name": "changes",
+      "block": "list",
+      "label": "Changes",
+      "hint": "Everything else"
+    },
+    {
+      "name": "breaking",
+      "block": "callout",
+      "label": "Breaking changes",
+      "hint": "What users must change"
+    }
+  ],
+  "example": {
+    "version": "v1.4.0 (2026-11-11)",
+    "highlights": [
+      "Uploads resume after a lost connection",
+      "Dark mode on Android"
+    ],
+    "changes": [
+      "Faster inbox loading",
+      "Fixed: emoji in names could not be saved"
+    ],
+    "breaking": {
+      "tone": "warning",
+      "text": "`cadenza show --file` is now `cadenza show <path>`. Update scripts."
+    }
+  }
+}

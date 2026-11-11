@@ -1,0 +1,44 @@
+{
+  "name": "code-change",
+  "use_for": "A change best explained by its code.",
+  "guide": "Use this for refactors, API changes and other work where the code is the story.\n\n- **summary**: what changed and why, in 2-3 sentences.\n- **files**: one bullet per file or area changed, with a few words each.\n- **diff**: the important part of the diff. For big changes, show the core and summarize the rest in files.\n- **notes**: what you want the owner to look at or decide.\n\nTip: keep the diff under a few hundred lines; reviewers skim long ones.",
+  "slots": [
+    {
+      "name": "summary",
+      "block": "text",
+      "required": true,
+      "label": "Summary",
+      "hint": "What changed and why"
+    },
+    {
+      "name": "files",
+      "block": "list",
+      "label": "Files changed",
+      "hint": "One bullet per file or area"
+    },
+    {
+      "name": "diff",
+      "block": "diff",
+      "label": "Diff",
+      "hint": "The important part of the diff"
+    },
+    {
+      "name": "notes",
+      "block": "text",
+      "label": "Notes for you",
+      "hint": "What to look at or decide"
+    }
+  ],
+  "example": {
+    "summary": "Moved retry logic out of each HTTP call into one `retry.Do` helper, so all calls back off the same way.",
+    "files": [
+      "`internal/retry/retry.go`: new helper with jittered backoff",
+      "`internal/api/client.go`: three calls now use it"
+    ],
+    "diff": {
+      "filename": "internal/api/client.go",
+      "diff": "--- a/internal/api/client.go\n+++ b/internal/api/client.go\n@@ -40,7 +40,3 @@\n-\tfor i := 0; i < 3; i++ {\n-\t\tresp, err = c.http.Do(req)\n-\t\tif err == nil { break }\n-\t\ttime.Sleep(time.Second)\n-\t}\n+\tresp, err := retry.Do(ctx, func() (*http.Response, error) { return c.http.Do(req) })\n"
+    },
+    "notes": "Backoff now caps at 30 s. Is that too long for the upload path?"
+  }
+}
