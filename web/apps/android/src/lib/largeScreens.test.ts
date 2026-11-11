@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import plugin from "../../plugins/large-screens.js";
 
-const { setLargeScreen } = plugin;
+const { setLargeScreen, setLegacyPackaging } = plugin;
 
 const manifest = (attrs: Record<string, string>) => ({
   manifest: { application: [{ activity: [{ $: { "android:name": ".SomethingElse" } }, { $: { "android:name": ".MainActivity", ...attrs } }] }] },
@@ -24,5 +24,18 @@ describe("large-screens config plugin", () => {
     const out = setLargeScreen(manifest({}));
     expect(out.manifest.application?.[0]?.activity?.[0]?.$).toEqual({ "android:name": ".SomethingElse" });
     expect(() => setLargeScreen({ manifest: { application: [{ activity: [] }] } })).toThrow(/MainActivity/);
+  });
+});
+
+describe("legacy packaging", () => {
+  it("unpacks native libraries at install, replacing any earlier setting", () => {
+    const out = setLegacyPackaging([
+      { type: "comment", value: "x" },
+      { type: "property", key: "expo.useLegacyPackaging", value: "false" },
+      { type: "property", key: "other", value: "1" },
+    ]);
+    expect(out.filter((p) => p.key === "expo.useLegacyPackaging")).toEqual([{ type: "property", key: "expo.useLegacyPackaging", value: "true" }]);
+    expect(out).toContainEqual({ type: "property", key: "other", value: "1" });
+    expect(out).toContainEqual({ type: "comment", value: "x" });
   });
 });

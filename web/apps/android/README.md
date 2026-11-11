@@ -66,7 +66,8 @@ Release build on a Pixel 6a emulator profile (Android 15, x86_64 on KVM), Novemb
   measure on the device before a release.
 - Single-ABI release APK: 24 MB (both ABIs: 41 MB). The Play Store delivers per device.
 
-Every release has `cadenza-android-arm64.apk` attached (debug-signed, for your own phone):
+Every release has `cadenza-android-arm64.apk` attached (debug-signed, for your own phone; native libraries are
+unpacked at install, so it also runs on x86_64 emulators with arm64 translation):
 `adb install -r cadenza-android-arm64.apk`. To build it yourself: `npx expo prebuild --platform android`, then
 `cd android && ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a`.
 
