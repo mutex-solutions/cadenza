@@ -103,6 +103,23 @@ jobs:
           CADENZA_TEST_S3_SECRET_KEY: cisecret123
         run: go test -count=1 -run RealStore -v ./internal/adapter/s3
 
+  docker:
+    name: Server image builds and starts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build
+        run: docker build -t cadenza:ci .
+      - name: Start with an empty volume and check it answers
+        run: |
+          docker run -d --name cadenza -p 8080:8080 -v cadenza-data:/data cadenza:ci
+          for i in $(seq 1 30); do curl -sf localhost:8080/healthz && break; sleep 1; done
+          curl -sf localhost:8080/v1/version | grep -q '"setup_needed":true'
+          curl -sf localhost:8080/ | grep -q '<title>Cadenza'
+      - name: Server logs
+        if: failure()
+        run: docker logs cadenza
+
   web:
     name: Web test, typecheck & build
     runs-on: ubuntu-latest
