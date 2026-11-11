@@ -103,6 +103,20 @@ jobs:
           CADENZA_TEST_S3_SECRET_KEY: cisecret123
         run: go test -count=1 -run RealStore -v ./internal/adapter/s3
 
+  perf:
+    name: Integration test and performance budgets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: End-to-end scenario and plan §12 budgets (no -race)
+        env:
+          CADENZA_PERF: "1"
+        run: go test -tags nodynamic -count=1 -v ./internal/e2e
+
   docker:
     name: Server image builds and starts
     runs-on: ubuntu-latest

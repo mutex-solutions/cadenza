@@ -2,8 +2,18 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "jsx": "react-jsx",
-    "lib": ["es2023", "dom", "dom.iterable"],
-    "types": []
+    "lib": [
+      "es2023",
+      "dom",
+      "dom.iterable"
+    ],
+    "types": [],
+    "allowJs": false
   },
-  "include": ["index.ts", "App.tsx", "src"]
+  "include": [
+    "index.ts",
+    "App.tsx",
+    "src",
+    "plugins"
+  ]
 }

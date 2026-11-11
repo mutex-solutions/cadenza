@@ -30,7 +30,7 @@ before/after, tap **yes**, add a photo, and the agent carries on with both.
 - **Yours.** Self-hosted, open source (Apache-2.0). Files go straight between your machines, your phone and your
   own S3-compatible storage; the server never touches file bytes.
 
-> **Status:** under active development; not released yet.
+> **Status:** early release (v0.1). Expect rough edges; issues and pull requests are welcome.
 
 ## Try it in a minute
 

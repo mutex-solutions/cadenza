@@ -55,3 +55,16 @@ below it shows every notification and any error.
 - The thread view needs the server to serve `/viewer/viewer.js` (the web
   app build does this). If the phone has never loaded it and is offline, posts
   show their titles only.
+
+## Checked on an emulator
+
+Release build on a Pixel 6a emulator profile (Android 15, x86_64 on KVM), November 2026:
+
+- Logged in to an `http://` server on the local network, saw the inbox update live, opened a thread (images,
+  markdown, lists render), answered a question; the agent's `cadenza wait` returned the answer.
+- Cold start (`am start -W`, TotalTime): 0.61–0.75 s. A real Pixel 6a is slower than the emulator on this host;
+  measure on the device before a release.
+- Single-ABI release APK: 24 MB (both ABIs: 41 MB). The Play Store delivers per device.
+
+To build it yourself: `npx expo prebuild --platform android`, then
+`cd android && ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a`.

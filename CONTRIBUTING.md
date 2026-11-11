@@ -19,6 +19,10 @@ docker run -d --rm -p 5432:5432 -e POSTGRES_PASSWORD=cadenza -e POSTGRES_DB=cade
 make test-postgres CADENZA_TEST_POSTGRES='postgres://postgres:cadenza@localhost:5432/cadenza?sslmode=disable'
 ```
 
+`internal/e2e` runs the whole system in one process (real server, real CLI, real HTTP and disk storage) through
+the plan's done-when scenario. With `CADENZA_PERF=1` it also checks the performance budgets (inbox and thread
+reads under 25 ms, idle memory under 60 MB, a templated `cadenza show` under 300 ms); CI runs them on every push.
+
 ## How the code is organised
 
 One Go module, two programs: `cmd/cadenza` (runs on agent machines) and `cmd/cadenza-server`.
