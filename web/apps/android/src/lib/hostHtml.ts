@@ -137,7 +137,7 @@ export function buildHostHtml(o: HostOptions): string {
 <meta name="referrer" content="no-referrer">
 <style>
 html,body{margin:0;background:${c.bg};color:${c.text};font:16px/1.5 system-ui,sans-serif;color-scheme:${o.theme === "dark" ? "dark" : "light"}}
-#posts{padding:12px 12px 96px}
+#posts{padding:12px 12px 96px;max-width:760px;margin:0 auto}
 .cz-host-post{margin:0 0 28px}
 .cz-host-post h2{font-size:18px;margin:0 0 6px}
 .cz-host-summary{color:${c.muted};margin:0 0 10px}

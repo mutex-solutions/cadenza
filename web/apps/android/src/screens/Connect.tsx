@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { KeyboardAvoidingView, ScrollView, StyleSheet, Text } from "react-native";
+import { FORM_MAX_WIDTH } from "../lib/layout";
 import { createClient } from "@cadenza/core";
 import { Button, Field, Message } from "../components/ui";
 import { errorText } from "../context";
@@ -64,7 +65,7 @@ export function ConnectScreen(props: { session: SessionStore; onConnected: (s: S
 }
 
 const styles = StyleSheet.create({
-  wrap: { padding: 20, paddingTop: 64 },
+  wrap: { padding: 20, paddingTop: 64, width: "100%", maxWidth: FORM_MAX_WIDTH, alignSelf: "center" },
   h1: { fontSize: 30, fontWeight: "800", marginBottom: 6 },
   lead: { fontSize: 16, marginBottom: 28 },
 });

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { FORM_MAX_WIDTH } from "../lib/layout";
 import { timeAgo, type Device, type NotificationEntry } from "@cadenza/core";
 import { Button, Header, Message } from "../components/ui";
 import { errorText, useApp } from "../context";
@@ -60,7 +61,7 @@ export function SettingsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <Header title="Settings" left={<Button title="Back" onPress={() => nav({ type: "pop" })} />} />
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 10 }}>
+      <ScrollView contentContainerStyle={{ padding: 16, gap: 10, width: "100%", maxWidth: FORM_MAX_WIDTH, alignSelf: "center" }}>
         <Text style={[styles.h, { color: colors.text }]}>Notifications</Text>
         <Text style={{ color: colors.muted }}>
           {deviceId ? "This phone gets a notification when an agent asks a question or has work ready." : "Notifications are off on this phone."}
