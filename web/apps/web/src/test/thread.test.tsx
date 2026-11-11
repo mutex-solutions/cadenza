@@ -40,6 +40,7 @@ function setup(view = threadView("t1"), routes: Routes = {}) {
   let current = view;
   const made = makeServices({
     "GET /v1/threads/t1": () => ({ body: current }),
+    "POST /v1/threads/t1/read": () => ({ body: {} }),
     "GET /v1/threads": () => ({ body: { threads: [current.thread] } }),
     ...routes,
   });
@@ -209,6 +210,53 @@ describe("thread view", () => {
   it("shows an error when the thread can't be loaded", async () => {
     setup(threadView("t1"), { "GET /v1/threads/t1": () => ({ status: 404, body: { error: { kind: "not_found", message: "No such thread." } } }) });
     expect(await screen.findByText("No such thread.")).toBeTruthy();
+  });
+});
+
+describe("reading and layout", () => {
+  it("marks the thread read when opened, and again when a change arrives while it's on screen", async () => {
+    const view = threadView("t1");
+    const { f, services, update } = setup({ ...view, thread: { ...view.thread, unread: true } });
+    await screen.findByRole("heading", { name: "Checkout redesign" });
+    await waitFor(() => expect(f.of("POST", "/v1/threads/t1/read")).toHaveLength(1));
+    expect(services.sync.getState().threads.t1!.thread.unread).toBe(false);
+
+    // The agent posts again: the server says unread, the open page reads it again.
+    update({ ...view, thread: { ...view.thread, unread: true, updated_at: view.thread.updated_at + 1 } });
+    await services.sync.refreshThread("t1");
+    await waitFor(() => expect(f.of("POST", "/v1/threads/t1/read")).toHaveLength(2));
+  });
+
+  it("waits until the page is visible to mark it read", async () => {
+    const visibility = vi.spyOn(document, "visibilityState", "get").mockReturnValue("hidden");
+    const view = threadView("t1");
+    const { f } = setup({ ...view, thread: { ...view.thread, unread: true } });
+    await screen.findByRole("heading", { name: "Checkout redesign" });
+    expect(f.of("POST", "/v1/threads/t1/read")).toHaveLength(0);
+    visibility.mockReturnValue("visible");
+    document.dispatchEvent(new Event("visibilitychange"));
+    await waitFor(() => expect(f.of("POST", "/v1/threads/t1/read")).toHaveLength(1));
+    visibility.mockRestore();
+  });
+
+  it("names posts in the reply picker without doubling Round", async () => {
+    const view = threadView("t1");
+    const second = { ...view.posts[0]!, id: "p_2", seq: 2, title: "Round 2: layout" };
+    const third = { ...view.posts[0]!, id: "p_3", seq: 3, title: "Spacing fixes" };
+    setup({ ...view, posts: [view.posts[0]!, second, third] });
+    const picker = (await screen.findByLabelText("On")) as HTMLSelectElement;
+    expect(Array.from(picker.options).map((o) => o.textContent)).toEqual(["Round 1 · Checkout redesign", "Round 2: layout", "Round 3 · Spacing fixes"]);
+  });
+
+  it("pads the page by the bottom bar's height so it never covers the reply buttons", async () => {
+    const h = vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(73);
+    setup();
+    const container = document.body;
+    await screen.findByRole("heading", { name: "Checkout redesign" });
+    const page = container.querySelector(".thread-page") as HTMLElement;
+    await waitFor(() => expect(page.style.getPropertyValue("--jump-bar-h")).toBe("73px"));
+    expect(page.contains(container.querySelector(".jump-bar"))).toBe(true);
+    h.mockRestore();
   });
 });
 

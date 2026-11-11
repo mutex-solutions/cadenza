@@ -66,3 +66,13 @@ export function clock(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000));
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
 }
+
+/**
+ * How a post is named in pickers: "Round 2 · Layout". Agents often title
+ * posts "Round 2: layout" themselves; then the title is used as is.
+ */
+export function postLabel(seq: number, title: string): string {
+  const t = title.trim();
+  if (/^round\b/i.test(t)) return t;
+  return t ? `Round ${seq} · ${t}` : `Round ${seq}`;
+}

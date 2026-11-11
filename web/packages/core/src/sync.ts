@@ -24,8 +24,6 @@ export interface SyncState {
   threads: Record<string, ThreadView>;
   /** The number of the last change seen (plan D15). */
   cursor: number;
-  /** Per thread, the updated_at the owner last saw; drives "unread". */
-  seen: Record<string, number>;
   connection: Connection;
   /** The last error, e.g. not logged in. Cleared on the next success. */
   error?: ApiError;
@@ -52,7 +50,6 @@ interface Saved {
   threads: Record<string, ThreadView>;
   order: string[];
   cursor: number;
-  seen: Record<string, number>;
 }
 
 const CACHE_KEY = "sync:v1";
@@ -60,11 +57,9 @@ const PAGE = 500;
 const MAX_SSE_ERRORS = 3;
 const MAX_BACKOFF_MS = 60_000;
 
-/** Whether the owner hasn't looked at this thread since it last changed. */
-export function isUnread(t: ThreadSummary, seen: Record<string, number>): boolean {
-  if (t.unread !== undefined) return t.unread;
-  const s = seen[t.id];
-  return s === undefined || t.updated_at > s;
+/** Whether the owner hasn't looked at this thread since it last changed (the server decides). */
+export function isUnread(t: ThreadSummary): boolean {
+  return t.unread === true;
 }
 
 /**
@@ -74,9 +69,8 @@ export function isUnread(t: ThreadSummary, seen: Record<string, number>): boolea
  */
 export class SyncEngine {
   private o: Required<Omit<SyncOptions, "eventSource" | "onEvent">> & Pick<SyncOptions, "eventSource" | "onEvent">;
-  private state: SyncState = { ready: false, fromCache: false, inbox: [], threads: {}, cursor: 0, seen: {}, connection: "connecting" };
+  private state: SyncState = { ready: false, fromCache: false, inbox: [], threads: {}, cursor: 0, connection: "connecting" };
   private order: string[] = [];
-  private seededSeen = false;
   private listeners = new Set<(s: SyncState) => void>();
   private es: EventSourceLike | null = null;
   private sseErrors = 0;
@@ -104,8 +98,7 @@ export class SyncEngine {
     const saved = await this.o.storage.get<Saved>(CACHE_KEY).catch(() => undefined);
     if (saved && saved.v === 1) {
       this.order = saved.order ?? [];
-      this.seededSeen = true;
-      this.set({ ready: true, fromCache: true, inbox: saved.inbox, threads: saved.threads, cursor: saved.cursor, seen: saved.seen });
+      this.set({ ready: true, fromCache: true, inbox: saved.inbox, threads: saved.threads, cursor: saved.cursor });
     }
     this.connect();
   }
@@ -124,8 +117,7 @@ export class SyncEngine {
   async clear(): Promise<void> {
     this.stop();
     this.order = [];
-    this.seededSeen = false;
-    this.state = { ready: false, fromCache: false, inbox: [], threads: {}, cursor: 0, seen: {}, connection: "connecting" };
+    this.state = { ready: false, fromCache: false, inbox: [], threads: {}, cursor: 0, connection: "connecting" };
     await this.o.storage.delete(CACHE_KEY);
     this.emit();
   }
@@ -173,26 +165,30 @@ export class SyncEngine {
   async refreshInbox(): Promise<void> {
     try {
       const { threads } = await this.o.client.call("threads");
-      let seen = this.state.seen;
-      if (!this.seededSeen) {
-        // First run: everything already there counts as seen.
-        seen = Object.fromEntries(threads.map((t) => [t.id, t.updated_at]));
-        this.seededSeen = true;
-      }
-      this.set({ inbox: threads, seen, ready: true, fromCache: false, error: undefined });
+      this.set({ inbox: threads, ready: true, fromCache: false, error: undefined });
       this.persist();
     } catch (err) {
       this.fail(err);
     }
   }
 
-  /** Records that the owner looked at a thread as it is now. */
-  markSeen(id: string): void {
-    const t = this.state.threads[id]?.thread ?? this.state.inbox.find((x) => x.id === id);
-    if (!t) return;
-    if (this.state.seen[id] === t.updated_at) return;
-    this.set({ seen: { ...this.state.seen, [id]: t.updated_at } });
+  /**
+   * Tells the server the owner looked at a thread (thread-read). The thread
+   * shows as read at once; the server's answer comes with the next refresh.
+   */
+  async markRead(id: string): Promise<void> {
+    const clear = <T extends { unread?: boolean }>(t: T): T => (t.unread ? { ...t, unread: false } : t);
+    const view = this.state.threads[id];
+    this.set({
+      inbox: this.state.inbox.map((t) => (t.id === id ? clear(t) : t)),
+      threads: view ? { ...this.state.threads, [id]: { ...view, thread: clear(view.thread) } } : this.state.threads,
+    });
     this.persist();
+    try {
+      await this.o.client.call("thread-read", { params: { id } });
+    } catch (err) {
+      this.fail(err);
+    }
   }
 
   // --- connection -------------------------------------------------------
@@ -360,7 +356,7 @@ export class SyncEngine {
     this.persistTimer = setTimeout(() => {
       this.persistTimer = null;
       const s = this.state;
-      const saved: Saved = { v: 1, inbox: s.inbox, threads: s.threads, order: this.order, cursor: s.cursor, seen: s.seen };
+      const saved: Saved = { v: 1, inbox: s.inbox, threads: s.threads, order: this.order, cursor: s.cursor };
       void this.o.storage.set(CACHE_KEY, saved).catch(() => undefined);
     }, 0);
   }

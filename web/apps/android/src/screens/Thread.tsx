@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { AppState, Pressable, StyleSheet, Text, View } from "react-native";
 import { agentLabel, statusLabel, type Spot, type ThreadView } from "@cadenza/core";
 import { PostWebView, type PostWebViewHandle } from "../components/PostWebView";
 import { ReplyPanel } from "../components/ReplyPanel";
 import { Button, Header, Message } from "../components/ui";
 import { errorText, useApp, useSync } from "../context";
 import type { HostMarker, HostPost } from "../lib/bridge";
-import { replyBarLabel } from "../lib/inbox";
+import { replyBarLabel, shouldMarkRead } from "../lib/inbox";
 import { useTheme } from "../theme";
 
 export function ThreadScreen(props: { id: string }) {
@@ -24,9 +24,23 @@ export function ThreadScreen(props: { id: string }) {
     sync.openThread(props.id).catch((err: unknown) => setError(errorText(err)));
   }, [sync, props.id]);
 
+  // Mark the thread read on the server when it opens, and again when changes
+  // arrive while it's on screen (or when the app comes back to the front).
+  const loaded = view !== undefined;
+  const unread = view?.thread.unread === true;
+  const markedThisOpen = useRef(false);
   useEffect(() => {
-    if (view) sync.markSeen(props.id);
-  }, [sync, props.id, view]);
+    const check = () => {
+      const t = sync.getState().threads[props.id]?.thread;
+      if (shouldMarkRead({ loaded: !!t, unread: t?.unread === true, active: AppState.currentState === "active", markedThisOpen: markedThisOpen.current })) {
+        markedThisOpen.current = true;
+        void sync.markRead(props.id);
+      }
+    };
+    check();
+    const sub = AppState.addEventListener("change", (s) => s === "active" && check());
+    return () => sub.remove();
+  }, [sync, props.id, loaded, unread]);
 
   const posts: HostPost[] = useMemo(
     () => (view?.posts ?? []).map((p) => ({ id: p.id, title: p.title, summary_html: p.summary_html, attachments: p.attachments })),

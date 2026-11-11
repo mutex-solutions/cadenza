@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState } from "react";
-import { withExtension, type PostView, type ReplyInput, type Spot } from "@cadenza/core";
+import { postLabel, withExtension, type PostView, type ReplyInput, type Spot } from "@cadenza/core";
 import type { PostViewer } from "@cadenza/viewer";
 import { useServices } from "../app/services.tsx";
 import { describeSpot } from "../lib/spot.ts";
@@ -89,7 +89,7 @@ export function ReplyPanel({
           >
             {posts.map((p) => (
               <option key={p.id} value={p.id}>
-                Round {p.seq}: {p.title}
+                {postLabel(p.seq, p.title)}
               </option>
             ))}
           </select>

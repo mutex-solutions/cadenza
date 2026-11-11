@@ -42,11 +42,40 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe("isUnread", () => {
-  it("uses the server flag when present, else the seen map", () => {
-    expect(isUnread(thread("a", 5, { unread: false }), {})).toBe(false);
-    expect(isUnread(thread("a", 5), {})).toBe(true);
-    expect(isUnread(thread("a", 5), { a: 5 })).toBe(false);
-    expect(isUnread(thread("a", 6), { a: 5 })).toBe(true);
+  it("uses the server's flag", () => {
+    expect(isUnread(thread("a", 5, { unread: false }))).toBe(false);
+    expect(isUnread(thread("a", 5, { unread: true }))).toBe(true);
+    expect(isUnread(thread("a", 5))).toBe(false);
+  });
+});
+
+describe("markRead", () => {
+  it("clears unread at once and tells the server", async () => {
+    const f = fakeFetch({
+      "GET /v1/threads": () => ({ body: { threads: [thread("t1", 1, { unread: true })] } }),
+      "GET /v1/threads/t1": () => ({ body: { ...threadView("t1", 1), thread: thread("t1", 1, { unread: true }) } }),
+      "POST /v1/threads/t1/read": () => ({ body: {} }),
+    });
+    const sync = new SyncEngine({ client: createClient({ fetch: f.fetch }), storage: memoryStorage(), eventSource: null });
+    await sync.refreshInbox();
+    await sync.refreshThread("t1");
+    const p = sync.markRead("t1");
+    expect(isUnread(sync.getState().inbox[0]!)).toBe(false);
+    expect(sync.getState().threads.t1!.thread.unread).toBe(false);
+    await p;
+    const call = f.calls.find((c) => c.url === "/v1/threads/t1/read")!;
+    expect(call.method).toBe("POST");
+    expect(call.body).toBeUndefined();
+  });
+
+  it("keeps working when the server can't be reached", async () => {
+    const sync = new SyncEngine({
+      client: createClient({ fetch: (async () => { throw new TypeError("offline"); }) as typeof fetch }),
+      storage: memoryStorage(),
+      eventSource: null,
+    });
+    await expect(sync.markRead("t1")).resolves.toBeUndefined();
+    expect(sync.getState().error?.offline).toBe(true);
   });
 });
 
@@ -71,11 +100,9 @@ describe("SyncEngine with server-sent events", () => {
     expect(s.connection).toBe("live");
     expect(s.ready).toBe(true);
     expect(s.inbox.map((t) => t.id)).toEqual(["t1"]);
-    // First run: existing threads count as seen.
-    expect(isUnread(s.inbox[0]!, s.seen)).toBe(false);
 
     await sync.openThread("t1");
-    inbox = [thread("t1", 2, { open_questions: 1 }), thread("t2", 2)];
+    inbox = [thread("t1", 2, { open_questions: 1, unread: true }), thread("t2", 2, { unread: true })];
     view = threadView("t1", 2);
     FakeES.last!.emit("change", ev(7, "question.asked", "t1"), "7");
     FakeES.last!.emit("change", ev(8, "thread.created", "t2"), "8");
@@ -84,14 +111,12 @@ describe("SyncEngine with server-sent events", () => {
     expect(s.cursor).toBe(8);
     expect(s.inbox.map((t) => t.id)).toEqual(["t1", "t2"]);
     expect(s.threads.t1!.thread.updated_at).toBe(2);
-    expect(isUnread(s.inbox[0]!, s.seen)).toBe(true);
-    expect(isUnread(s.inbox[1]!, s.seen)).toBe(true);
+    expect(isUnread(s.inbox[0]!)).toBe(true);
+    expect(isUnread(s.inbox[1]!)).toBe(true);
     expect(onEvent).toHaveBeenCalledTimes(2);
     // Changes in a burst are fetched once.
     expect(f.calls.filter((c) => c.url === "/v1/threads/t1")).toHaveLength(2);
 
-    sync.markSeen("t1");
-    expect(isUnread(sync.getState().inbox[0]!, sync.getState().seen)).toBe(false);
 
     // The copy is saved for next time.
     await flush(10);
@@ -104,7 +129,7 @@ describe("SyncEngine with server-sent events", () => {
 
   it("opens instantly from the saved copy and resumes after its cursor", async () => {
     const storage = memoryStorage({
-      "sync:v1": { v: 1, inbox: [thread("old", 3)], threads: { old: threadView("old", 3) }, order: ["old"], cursor: 42, seen: { old: 3 } },
+      "sync:v1": { v: 1, inbox: [thread("old", 3)], threads: { old: threadView("old", 3) }, order: ["old"], cursor: 42 },
     });
     const f = fakeFetch({
       "GET /v1/threads": () => ({ body: { threads: [thread("old", 3)] } }),
@@ -127,7 +152,7 @@ describe("SyncEngine with server-sent events", () => {
   });
 
   it("reloads everything on reset", async () => {
-    const storage = memoryStorage({ "sync:v1": { v: 1, inbox: [], threads: {}, order: [], cursor: 5, seen: {} } });
+    const storage = memoryStorage({ "sync:v1": { v: 1, inbox: [], threads: {}, order: [], cursor: 5 } });
     const f = fakeFetch({ "GET /v1/threads": () => ({ body: { threads: [thread("n", 9)] } }) });
     const sync = new SyncEngine({ client: createClient({ fetch: f.fetch }), storage, eventSource: (u) => new FakeES(u) });
     await sync.start();
@@ -189,7 +214,7 @@ describe("SyncEngine polling", () => {
 
   it("handles reset while polling by starting over", async () => {
     const responses: EventList[] = [{ events: [], reset: true, last: 900 }, { events: [], last: 900 }];
-    const storage = memoryStorage({ "sync:v1": { v: 1, inbox: [], threads: {}, order: [], cursor: 3, seen: {} } });
+    const storage = memoryStorage({ "sync:v1": { v: 1, inbox: [], threads: {}, order: [], cursor: 3 } });
     const f = fakeFetch({
       "GET /v1/threads": () => ({ body: { threads: [] } }),
       "GET /v1/events": () => ({ body: responses.shift() ?? { events: [], last: 900 } }),
@@ -213,7 +238,7 @@ describe("SyncEngine polling", () => {
       if (down) throw new TypeError("offline");
       return f.fetch(i, init);
     }) as typeof fetch;
-    const storage = memoryStorage({ "sync:v1": { v: 1, inbox: [thread("c", 1)], threads: {}, order: [], cursor: 1, seen: {} } });
+    const storage = memoryStorage({ "sync:v1": { v: 1, inbox: [thread("c", 1)], threads: {}, order: [], cursor: 1 } });
     const sync = new SyncEngine({ client: createClient({ fetch: fetchFn }), storage, eventSource: null, pollMs: 1000 });
     await sync.start();
     await flush(10);
@@ -241,7 +266,7 @@ describe("SyncEngine polling", () => {
   });
 
   it("clear() drops the saved copy", async () => {
-    const storage = memoryStorage({ "sync:v1": { v: 1, inbox: [thread("x")], threads: {}, order: [], cursor: 1, seen: {} } });
+    const storage = memoryStorage({ "sync:v1": { v: 1, inbox: [thread("x")], threads: {}, order: [], cursor: 1 } });
     const f = fakeFetch({ "GET /v1/events": () => ({ body: { events: [], last: 1 } }), "GET /v1/threads": () => ({ body: { threads: [] } }) });
     const sync = new SyncEngine({ client: createClient({ fetch: f.fetch }), storage, eventSource: null });
     await sync.start();

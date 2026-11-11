@@ -1,6 +1,6 @@
 import "fake-indexeddb/auto";
 import { describe, expect, it, vi } from "vitest";
-import { agentLabel, clock, fileSize, statusLabel, timeAgo } from "./format.ts";
+import { agentLabel, clock, fileSize, postLabel, statusLabel, timeAgo } from "./format.ts";
 import { browserImageConverter, fitWithin, withExtension } from "./image.ts";
 import { indexedDBStorage, memoryStorage } from "./storage.ts";
 
@@ -24,6 +24,13 @@ describe("format", () => {
     expect(fileSize(1536)).toBe("1.5 KB");
     expect(fileSize(50 * 1024 * 1024)).toBe("50 MB");
     expect(clock(65_400)).toBe("1:05");
+  });
+  it("names posts without doubling Round", () => {
+    expect(postLabel(2, "layout")).toBe("Round 2 · layout");
+    expect(postLabel(2, "Round 2: layout")).toBe("Round 2: layout");
+    expect(postLabel(3, "round 3 fixes")).toBe("round 3 fixes");
+    expect(postLabel(4, "Roundup of changes")).toBe("Round 4 · Roundup of changes");
+    expect(postLabel(5, "  ")).toBe("Round 5");
   });
 });
 

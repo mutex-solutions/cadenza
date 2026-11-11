@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { timeAgo, type NotificationEntry } from "@cadenza/core";
+import { timeAgo, type Device, type NotificationEntry } from "@cadenza/core";
 import { Button, Header, Message } from "../components/ui";
 import { errorText, useApp } from "../context";
+import { deviceRows } from "../lib/inbox";
 import { disableNotifications, enableNotifications } from "../native/notifications";
 import { useTheme } from "../theme";
 
@@ -10,13 +11,26 @@ export function SettingsScreen() {
   const { colors } = useTheme();
   const { client, session, nav, logout, serverUrl } = useApp();
   const [deviceId, setDeviceId] = useState<string | null>(null);
+  const [devices, setDevices] = useState<Device[]>([]);
   const [log, setLog] = useState<NotificationEntry[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
 
   const load = useCallback(async () => {
-    setDeviceId(await session.deviceId());
+    // The server's list is the truth; the saved id only says which device is this phone.
+    let mine = await session.deviceId();
+    try {
+      const list = (await client.call("devices")).devices;
+      setDevices(list);
+      if (mine && !list.some((d) => d.id === mine)) {
+        await session.clearDeviceId();
+        mine = null;
+      }
+    } catch (err) {
+      setError(errorText(err));
+    }
+    setDeviceId(mine);
     try {
       setLog((await client.call("notifications")).items);
     } catch (err) {
@@ -60,6 +74,29 @@ export function SettingsScreen() {
           <Button title="Send a test" onPress={() => run(async () => void (await client.call("notification-test")), "Test sent. It should arrive in a few seconds.")} disabled={busy} />
         </View>
         {info ? <Message>{info}</Message> : null}
+        <Text style={[styles.h, { color: colors.text }]}>Devices that get notifications</Text>
+        {devices.length === 0 ? <Text style={{ color: colors.muted }}>No devices yet.</Text> : null}
+        {deviceRows(devices, deviceId).map((d) => (
+          <View key={d.id} style={[styles.item, { borderColor: colors.line }]}>
+            <Text style={{ color: colors.text, fontWeight: "600" }}>
+              {d.name}
+              {d.thisPhone ? " (this phone)" : ""}
+            </Text>
+            <Text style={{ color: colors.muted, fontSize: 12 }}>{d.detail}</Text>
+            <View style={styles.row}>
+              <Button
+                title="Remove"
+                disabled={busy}
+                onPress={() =>
+                  run(
+                    () => (d.thisPhone ? disableNotifications(client, session) : client.call("device-remove", { params: { id: d.id } }).then(() => undefined)),
+                    "Device removed.",
+                  )
+                }
+              />
+            </View>
+          </View>
+        ))}
         {error ? <Message kind="error">{error}</Message> : null}
         <Text style={[styles.h, { color: colors.text }]}>Recent notifications</Text>
         {log.length === 0 ? <Text style={{ color: colors.muted }}>None sent yet.</Text> : null}

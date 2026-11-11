@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { timeAgo, type Machine } from "@cadenza/core";
+import { agentLabel, timeAgo, type Machine, type Session } from "@cadenza/core";
 import { useServices } from "../app/services.tsx";
 import { ErrorText } from "../components/ErrorText.tsx";
 import { useAction } from "../lib/useAsync.ts";
@@ -55,7 +55,7 @@ function PairForm({ onPaired }: { onPaired: () => void }) {
   );
 }
 
-function MachineItem({ m, onChange }: { m: Machine; onChange: () => void }) {
+function MachineItem({ m, sessions, onChange }: { m: Machine; sessions: Session[]; onChange: () => void }) {
   const { client } = useServices();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(m.name);
@@ -95,7 +95,7 @@ function MachineItem({ m, onChange }: { m: Machine; onChange: () => void }) {
           <div style={{ flex: 1, minWidth: 0 }}>
             <strong>{m.name}</strong>
             <div className="small muted">
-              Last seen {m.last_seen_at ? timeAgo(m.last_seen_at) : "never"} · {m.sessions} agent {m.sessions === 1 ? "session" : "sessions"}
+              Last seen {m.last_seen_at ? timeAgo(m.last_seen_at) : "never"} · {sessions.length} agent {sessions.length === 1 ? "session" : "sessions"}
             </div>
           </div>
           <button onClick={() => setEditing(true)}>Rename</button>
@@ -105,60 +105,55 @@ function MachineItem({ m, onChange }: { m: Machine; onChange: () => void }) {
         </div>
       )}
       <ErrorText error={rename.error ?? remove.error} />
+      {sessions.length > 0 && (
+        <ul className="list sessions" aria-label={`Agent sessions on ${m.name}`}>
+          {sessions.map((s) => (
+            <SessionItem key={s.id} s={s} onChange={onChange} />
+          ))}
+        </ul>
+      )}
     </li>
   );
 }
 
-function RevokeSession() {
+/** One live agent session; revoking stops its key without removing the machine. */
+function SessionItem({ s, onChange }: { s: Session; onChange: () => void }) {
   const { client } = useServices();
-  const [id, setId] = useState("");
-  const [done, setDone] = useState(false);
   const revoke = useAction(async () => {
-    await client.call("session-revoke", { params: { id: id.trim() } });
-    setId("");
-    setDone(true);
+    await client.call("session-revoke", { params: { id: s.id } });
+    onChange();
   });
+  const where = s.repo || s.cwd;
   return (
-    <form
-      className="panel"
-      aria-labelledby="revoke-title"
-      onSubmit={(e) => {
-        e.preventDefault();
-        setDone(false);
-        void revoke.run();
-      }}
-    >
-      <h2 id="revoke-title">Revoke one agent session</h2>
-      <p className="small muted">Stops one agent session's key without removing the machine. The session id is in the agent's cadenza output.</p>
+    <li>
       <div className="row">
-        <label htmlFor="session-id" className="sr-only">
-          Session id
-        </label>
-        <input id="session-id" type="text" value={id} onChange={(e) => setId(e.target.value)} placeholder="Session id" style={{ flex: 1 }} />
-        <button type="submit" className="bad" disabled={!id.trim() || revoke.busy}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <span>{agentLabel(s.agent)}</span>
+          {where && <span className="small muted mono"> {where}</span>}
+          <div className="small muted">
+            Started {timeAgo(s.created_at)} · last used {s.last_used_at ? timeAgo(s.last_used_at) : "never"}
+          </div>
+        </div>
+        <button className="bad" onClick={() => void revoke.run()} disabled={revoke.busy} aria-label={`Revoke ${agentLabel(s.agent)} session${where ? ` in ${where}` : ""}`}>
           Revoke
         </button>
       </div>
       <ErrorText error={revoke.error} />
-      {done && (
-        <p className="small" role="status">
-          Session revoked.
-        </p>
-      )}
-    </form>
+    </li>
   );
 }
 
-/** Paired machines: approve new ones, rename, remove, revoke a session. */
+/** Paired machines: approve new ones, rename, remove, revoke agent sessions. */
 export default function MachinesPage() {
   const { client, onChange } = useServices();
   const [machines, setMachines] = useState<Machine[] | null>(null);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [error, setError] = useState<unknown>(null);
   const load = useCallback(() => {
-    client
-      .call("machines")
-      .then((r) => {
-        setMachines(r.machines);
+    Promise.all([client.call("machines"), client.call("sessions")])
+      .then(([m, s]) => {
+        setMachines(m.machines);
+        setSessions(s.sessions);
         setError(null);
       })
       .catch((e: unknown) => setError(e));
@@ -182,12 +177,11 @@ export default function MachinesPage() {
         {machines && machines.length > 0 && (
           <ul className="list">
             {machines.map((m) => (
-              <MachineItem key={m.id} m={m} onChange={load} />
+              <MachineItem key={m.id} m={m} sessions={sessions.filter((x) => x.machine_id === m.id)} onChange={load} />
             ))}
           </ul>
         )}
       </section>
-      <RevokeSession />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { agentLabel, statusLabel, type QuestionView, type ReplyView, type ThreadView } from "@cadenza/core";
 import type { PostViewer } from "@cadenza/viewer";
 import { Link } from "../app/router.tsx";
@@ -29,11 +29,39 @@ export default function ThreadPage({ id }: { id: string }) {
     sync.openThread(id).catch((e: unknown) => setError(e));
   }, [id, sync]);
 
-  // Looking at the thread marks it read, including changes that arrive while it's open.
-  const updated = view?.thread.updated_at;
+  // Opening the thread marks it read on the server (thread-read), and so does
+  // any change that arrives while it's open and on screen.
+  const loaded = view !== undefined;
+  const unread = view?.thread.unread === true;
+  const markedOnce = useRef<string | null>(null);
   useEffect(() => {
-    if (updated !== undefined) sync.markSeen(id);
-  }, [id, updated, sync]);
+    if (!loaded || document.visibilityState === "hidden") return;
+    if (unread || markedOnce.current !== id) {
+      markedOnce.current = id;
+      void sync.markRead(id);
+    }
+  }, [id, loaded, unread, sync]);
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && sync.getState().threads[id]?.thread.unread) void sync.markRead(id);
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [id, sync]);
+
+  // The fixed bottom bar must never cover the end of the page: pad by its real height.
+  const bar = useRef<HTMLDivElement>(null);
+  const [barHeight, setBarHeight] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const el = bar.current;
+    if (!el) return;
+    const measure = () => setBarHeight(el.offsetHeight || null);
+    measure();
+    if (typeof ResizeObserver !== "function") return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [loaded]);
 
   useEffect(() => {
     if (view) document.title = `${view.thread.title} · Cadenza`;
@@ -72,8 +100,9 @@ export default function ThreadPage({ id }: { id: string }) {
   const postById = new Map(posts.map((p) => [p.id, p]));
   const archived = thread.status === "archived";
 
+  const padStyle = (barHeight ? { "--jump-bar-h": `${barHeight}px` } : {}) as CSSProperties;
   return (
-    <div>
+    <div className="thread-page" style={padStyle}>
       <div className="thread-head">
         <Link to="/" className="btn ghost" aria-label="Back to the inbox">
           ←
@@ -125,7 +154,7 @@ export default function ThreadPage({ id }: { id: string }) {
           )}
         </aside>
       </div>
-      <div className="jump-bar">
+      <div className="jump-bar" ref={bar}>
         <button className={open.length ? "primary" : ""} onClick={() => document.getElementById("respond")?.scrollIntoView({ behavior: "smooth" })}>
           {open.length ? `${open.length} ${open.length === 1 ? "question" : "questions"} · Reply` : "Reply"}
         </button>

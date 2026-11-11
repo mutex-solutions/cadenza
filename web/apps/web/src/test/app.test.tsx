@@ -110,11 +110,11 @@ describe("inbox", () => {
     expect(rows[1]!.textContent).toContain("Approved");
     expect(rows[0]!.getAttribute("href")).toBe("/t/t1");
     expect(screen.getByText("2 open")).toBeTruthy();
-    // Threads present on first load count as seen.
+    // Unread comes from the server.
     expect(rows[0]!.getAttribute("data-unread")).toBe("false");
 
     // A change arrives: that thread becomes unread.
-    threads = [{ ...threads[0]!, updated_at: now + 1000 }, threads[1]!];
+    threads = [{ ...threads[0]!, updated_at: now + 1000, unread: true }, threads[1]!];
     await act(() => services.sync.refreshInbox());
     await waitFor(() => expect(screen.getAllByRole("link", { name: /Checkout redesign/ })[0]!.getAttribute("data-unread")).toBe("true"));
     expect(screen.getByText("Unread:")).toBeTruthy();
@@ -126,6 +126,7 @@ describe("inbox", () => {
       "GET /v1/me": () => ({ body: { owner_id: "o" } }),
       "GET /v1/threads": () => ({ body: { threads: [thread("t1", { title: "Checkout redesign" })] } }),
       "GET /v1/threads/t1": () => ({ body: { thread: thread("t1", { title: "Checkout redesign" }), posts: [], questions: [], replies: [] } }),
+      "POST /v1/threads/t1/read": () => ({ body: {} }),
     });
     renderWith(<App />, services);
     fireEvent.click(await screen.findByRole("link", { name: /Checkout redesign/ }));

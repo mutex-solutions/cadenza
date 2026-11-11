@@ -1,16 +1,33 @@
 import { useCallback, useEffect, useState } from "react";
-import { timeAgo, type NotificationEntry, type Version } from "@cadenza/core";
+import { timeAgo, type Device, type NotificationEntry, type Version } from "@cadenza/core";
 import { useServices } from "../app/services.tsx";
 import { ErrorText } from "../components/ErrorText.tsx";
-import { disablePush, enablePush, pushSupport, savedDeviceId } from "../lib/push.ts";
+import { disablePush, enablePush, forgetDeviceId, pushSupport, savedDeviceId } from "../lib/push.ts";
 import { useAction } from "../lib/useAsync.ts";
 
 function Notifications() {
   const { client } = useServices();
   const support = pushSupport();
   const [deviceId, setDeviceId] = useState<string | null>(savedDeviceId());
+  const [devices, setDevices] = useState<Device[] | null>(null);
   const [log, setLog] = useState<NotificationEntry[] | null>(null);
   const [tested, setTested] = useState(false);
+
+  // The server's device list is the truth; the saved id only says which one is this browser.
+  const loadDevices = useCallback(() => {
+    client
+      .call("devices")
+      .then((r) => {
+        setDevices(r.devices);
+        const mine = savedDeviceId();
+        if (mine && !r.devices.some((d) => d.id === mine)) {
+          forgetDeviceId();
+          setDeviceId(null);
+        }
+      })
+      .catch(() => setDevices([]));
+  }, [client]);
+  useEffect(loadDevices, [loadDevices]);
 
   const loadLog = useCallback(() => {
     client
@@ -20,10 +37,23 @@ function Notifications() {
   }, [client]);
   useEffect(loadLog, [loadLog]);
 
-  const enable = useAction(async () => setDeviceId(await enablePush(client)));
+  const enable = useAction(async () => {
+    setDeviceId(await enablePush(client));
+    loadDevices();
+  });
   const disable = useAction(async () => {
     await disablePush(client);
     setDeviceId(null);
+    loadDevices();
+  });
+  const removeDevice = useAction(async (id: string) => {
+    if (id === deviceId) {
+      await disablePush(client);
+      setDeviceId(null);
+    } else {
+      await client.call("device-remove", { params: { id } });
+    }
+    loadDevices();
   });
   const test = useAction(async () => {
     setTested(false);
@@ -58,6 +88,29 @@ function Notifications() {
         </div>
       )}
       <ErrorText error={enable.error ?? disable.error} />
+      <h3 style={{ marginTop: 16 }}>Devices that get notifications</h3>
+      {devices === null && <p className="muted small">Loading…</p>}
+      {devices?.length === 0 && <p className="muted small">No devices yet.</p>}
+      {devices && devices.length > 0 && (
+        <ul className="list" aria-label="Devices">
+          {devices.map((d) => (
+            <li key={d.id} className="row">
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <strong>{d.name || d.provider}</strong>
+                {d.id === deviceId && <span className="pill" style={{ marginLeft: 6 }}>This browser</span>}
+                <div className="small muted">
+                  {d.provider === "webpush" ? "Browser" : d.provider === "expo" ? "Android app" : d.provider} · added {timeAgo(d.created_at)} ·{" "}
+                  {d.last_ok_at ? `last delivered ${timeAgo(d.last_ok_at)}` : "nothing delivered yet"}
+                </div>
+              </div>
+              <button onClick={() => void removeDevice.run(d.id)} disabled={removeDevice.busy} aria-label={`Remove ${d.name || d.provider}`}>
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <ErrorText error={removeDevice.error} />
       <div className="row" style={{ marginTop: 12 }}>
         <button onClick={() => void test.run()} disabled={test.busy}>
           Send a test notification

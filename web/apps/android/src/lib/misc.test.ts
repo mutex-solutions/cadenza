@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { FileUrlCache, URL_MARGIN_MS } from "./fileUrls";
-import { inboxRows, replyBarLabel } from "./inbox";
+import { deviceRows, inboxRows, replyBarLabel, shouldMarkRead } from "./inbox";
 import { navReducer, threadFromNotification, type Screen } from "./nav";
 import { photoName, photoSizes, preparePhoto } from "./photo";
 import { createSessionStore, DEVICE_KEY, SERVER_KEY, TOKEN_KEY, type SecureStoreLike } from "./session";
@@ -146,12 +146,35 @@ describe("session store", () => {
 });
 
 describe("inbox rows", () => {
-  const t = (id: string, updated: number, q = 0) => ({ id, title: id, status: "ready", machine: "vm-03", agent: "claude-code", posts: 1, open_questions: q, updated_at: updated });
-  it("puts open questions first, then newest, with labels", () => {
-    const rows = inboxRows([t("old", 1), t("new", 5), t("ask", 2, 2)], { new: 5 }, 10_000);
+  const t = (id: string, updated: number, q = 0, unread = false) => ({ id, title: id, status: "ready", machine: "vm-03", agent: "claude-code", posts: 1, open_questions: q, updated_at: updated, unread });
+  it("puts open questions first, then newest, with labels and the server's unread flag", () => {
+    const rows = inboxRows([t("old", 1), t("new", 5), t("ask", 2, 2, true)], 10_000);
     expect(rows.map((r) => r.id)).toEqual(["ask", "new", "old"]);
     expect(rows[0]).toMatchObject({ subtitle: "Claude Code · vm-03", status: "Ready to review", questions: 2, unread: true, time: "now" });
     expect(rows[1]!.unread).toBe(false);
+  });
+  it("marks a thread read once on open, then on each change, only while on screen", () => {
+    const base = { loaded: true, unread: false, active: true, markedThisOpen: false };
+    expect(shouldMarkRead(base)).toBe(true);
+    expect(shouldMarkRead({ ...base, markedThisOpen: true })).toBe(false);
+    expect(shouldMarkRead({ ...base, markedThisOpen: true, unread: true })).toBe(true);
+    expect(shouldMarkRead({ ...base, unread: true, active: false })).toBe(false);
+    expect(shouldMarkRead({ ...base, loaded: false })).toBe(false);
+  });
+  it("lists devices with this phone marked", () => {
+    const now = 10_000_000_000;
+    const rows = deviceRows(
+      [
+        { id: "d_1", provider: "expo", name: "Pixel 6a", created_at: now - 2 * 86_400_000, last_ok_at: now - 300_000 },
+        { id: "d_2", provider: "webpush", name: "", created_at: now, last_ok_at: 0 },
+      ],
+      "d_1",
+      now,
+    );
+    expect(rows).toEqual([
+      { id: "d_1", name: "Pixel 6a", detail: "Android app · added 2 d · last delivered 5 min", thisPhone: true },
+      { id: "d_2", name: "webpush", detail: "Browser · added now · nothing delivered yet", thisPhone: false },
+    ]);
   });
   it("labels the reply bar", () => {
     expect(replyBarLabel(0)).toBe("Reply");

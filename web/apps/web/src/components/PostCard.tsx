@@ -54,7 +54,7 @@ export function PostCard({
     <article className="post" id={`post-${post.id}`} aria-labelledby={`post-title-${post.id}`}>
       <div className="post-head">
         <div className="round">
-          Round {post.seq} · {timeAgo(post.created_at)}
+          {/^round\b/i.test(post.title.trim()) ? timeAgo(post.created_at) : `Round ${post.seq} · ${timeAgo(post.created_at)}`}
         </div>
         <h2 id={`post-title-${post.id}`}>{post.title}</h2>
       </div>

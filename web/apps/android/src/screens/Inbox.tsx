@@ -31,7 +31,7 @@ export function InboxScreen() {
     if (archived) void loadArchived();
   }, [archived, loadArchived]);
 
-  const rows = useMemo(() => inboxRows(archived ? (archivedList ?? []) : state.inbox, state.seen), [archived, archivedList, state.inbox, state.seen]);
+  const rows = useMemo(() => inboxRows(archived ? (archivedList ?? []) : state.inbox), [archived, archivedList, state.inbox]);
 
   async function refresh() {
     setRefreshing(true);

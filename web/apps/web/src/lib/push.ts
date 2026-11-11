@@ -37,6 +37,15 @@ export function savedDeviceId(): string | null {
   }
 }
 
+/** Forgets which device this browser is (after it was removed on the server). */
+export function forgetDeviceId(): void {
+  try {
+    localStorage.removeItem(DEVICE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 /** Turns on notifications for this browser: asks permission, subscribes, registers with the server. */
 export async function enablePush(client: Client, nav: Navigator = navigator): Promise<string> {
   const cfg = await client.call("push-config");
@@ -73,11 +82,7 @@ export async function enablePush(client: Client, nav: Navigator = navigator): Pr
 export async function disablePush(client: Client, nav: Navigator = navigator): Promise<void> {
   const id = savedDeviceId();
   if (id) await client.call("device-remove", { params: { id } });
-  try {
-    localStorage.removeItem(DEVICE_KEY);
-  } catch {
-    /* ignore */
-  }
+  forgetDeviceId();
   const reg = await nav.serviceWorker?.getRegistration("/sw.js");
   const sub = await reg?.pushManager.getSubscription();
   await sub?.unsubscribe();

@@ -47,7 +47,7 @@
   }
 }
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; scroll-padding-bottom: 80px; }
 body {
   margin: 0;
   background: var(--bg);
@@ -186,6 +186,10 @@ label { display: block; font-size: 13px; font-weight: 600; margin: 0 0 4px; colo
   border-top: 1px solid var(--line); display: flex; justify-content: center;
 }
 .jump-bar button { width: 100%; max-width: 480px; }
+/* Room for the fixed bottom bar, so the last buttons are never hidden behind it.
+   --jump-bar-h is the bar's measured height; the fallback matches its CSS size. */
+.thread-page { padding-bottom: calc(var(--jump-bar-h, calc(61px + env(safe-area-inset-bottom))) + 16px); }
+@media (min-width: 1000px) { .thread-page { padding-bottom: 0; } }
 
 /* Machines / settings tables */
 .list { list-style: none; margin: 0; padding: 0; }
@@ -200,3 +204,5 @@ label { display: block; font-size: 13px; font-weight: 600; margin: 0 0 4px; colo
 .sketch canvas { flex: 1; touch-action: none; background: #fff; width: 100%; min-height: 0; }
 .sketch .bar { display: flex; gap: 8px; padding: 10px 16px; align-items: center; flex-wrap: wrap; }
 .sketch .bar input { flex: 1; min-width: 160px; }
+.sessions { margin: 8px 0 0 12px; padding-left: 10px; border-left: 2px solid var(--line); }
+.sessions li { padding: 6px 0; }

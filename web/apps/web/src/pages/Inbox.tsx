@@ -65,7 +65,7 @@ export function Inbox() {
       ) : (
         <ul className="threads" aria-label="Threads">
           {s.inbox.map((t) => (
-            <ThreadRow key={t.id} t={t} unread={isUnread(t, s.seen)} />
+            <ThreadRow key={t.id} t={t} unread={isUnread(t)} />
           ))}
         </ul>
       )}
