@@ -1,0 +1,23 @@
+# sqlc generates typed Go for both databases from the same queries.
+# Run `make gen` from the repo root. Generated code is committed.
+version: "2"
+sql:
+  - engine: sqlite
+    schema: schema/sqlite
+    queries: queries
+    gen:
+      go:
+        package: db
+        out: sqlite/db
+        emit_json_tags: false
+        emit_empty_slices: true
+  - engine: postgresql
+    schema: schema/postgres
+    queries: queries
+    gen:
+      go:
+        package: db
+        out: postgres/db
+        sql_package: database/sql
+        emit_json_tags: false
+        emit_empty_slices: true

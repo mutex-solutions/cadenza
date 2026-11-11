@@ -1,0 +1,65 @@
+{
+  "name": "ui-change",
+  "use_for": "Any visible UI change: show before and after.",
+  "guide": "Use this for any change a person can see on screen.\n\n- **summary**: one or two sentences on what changed and why. Lead with the effect, not the code.\n- **before** / **after**: screenshots of the same screen at the same size, so the slider lines up. PNG is fine; the CLI converts to WebP.\n- **demo**: a short recording (under 30 s) when the change involves motion or several steps.\n- **changes**: one bullet per visible change.\n- **risks**: anything that could look or behave worse, e.g. small screens or dark mode.\n\nTips: crop to the part that changed; take both shots with the same data so only your change differs.",
+  "slots": [
+    {
+      "name": "summary",
+      "block": "text",
+      "required": true,
+      "label": "Summary",
+      "hint": "What changed and why, in 1-2 sentences",
+      "max": 1000
+    },
+    {
+      "name": "before",
+      "block": "image",
+      "label": "Before",
+      "hint": "Screenshot before the change"
+    },
+    {
+      "name": "after",
+      "block": "image",
+      "label": "After",
+      "hint": "Screenshot after the change, same size as before"
+    },
+    {
+      "name": "demo",
+      "block": "video",
+      "label": "Demo",
+      "hint": "Short recording of the change in use"
+    },
+    {
+      "name": "changes",
+      "block": "list",
+      "label": "Changes",
+      "hint": "One bullet per visible change"
+    },
+    {
+      "name": "risks",
+      "block": "list",
+      "label": "Risks",
+      "hint": "What could look or work worse"
+    }
+  ],
+  "example": {
+    "summary": "Promo code field now sits below the order total, so checkout is one step instead of two.",
+    "before": {
+      "file": "./shots/checkout-before.png"
+    },
+    "after": {
+      "file": "./shots/checkout-after.png"
+    },
+    "demo": {
+      "file": "./shots/checkout.mp4"
+    },
+    "changes": [
+      "Promo field moved under the total",
+      "Step 2 (\"Apply code\") removed",
+      "Error text now shows inline"
+    ],
+    "risks": [
+      "On screens under 360 px the total wraps to two lines"
+    ]
+  }
+}

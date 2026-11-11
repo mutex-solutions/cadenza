@@ -1,0 +1,44 @@
+{
+  "name": "design-review",
+  "use_for": "Mockups or visual ideas for feedback.",
+  "guide": "Use this to get feedback on visual ideas before building them.\n\n- **mockups**: the images, each with a caption naming the idea (\"A: cards\", \"B: list\").\n- **reasoning**: what each idea tries to solve and the trade-offs.\n- **questions**: what you want the owner to react to.\n\nTip: show all ideas at the same size and with the same content so they compare fairly.",
+  "slots": [
+    {
+      "name": "mockups",
+      "block": "gallery",
+      "required": true,
+      "label": "Mockups",
+      "hint": "Images with captions"
+    },
+    {
+      "name": "reasoning",
+      "block": "text",
+      "required": true,
+      "label": "Reasoning",
+      "hint": "What each idea solves"
+    },
+    {
+      "name": "questions",
+      "block": "list",
+      "label": "Questions",
+      "hint": "What to react to"
+    }
+  ],
+  "example": {
+    "mockups": [
+      {
+        "file": "./mock/inbox-cards.png",
+        "caption": "A: cards"
+      },
+      {
+        "file": "./mock/inbox-list.png",
+        "caption": "B: dense list"
+      }
+    ],
+    "reasoning": "**A** shows a preview image per post, good for UI work. **B** fits twice as many threads on a phone.",
+    "questions": [
+      "Which fits how you use the inbox?",
+      "Is the unread dot visible enough in B?"
+    ]
+  }
+}

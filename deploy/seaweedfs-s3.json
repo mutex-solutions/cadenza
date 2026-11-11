@@ -1,0 +1,9 @@
+{
+  "identities": [
+    {
+      "name": "cadenza",
+      "credentials": [{ "accessKey": "cadenza", "secretKey": "change-me-to-a-long-secret" }],
+      "actions": ["Read", "Write", "List", "Tagging"]
+    }
+  ]
+}

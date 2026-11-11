@@ -1,0 +1,87 @@
+{
+  "name": "incident",
+  "use_for": "Something broke: what happened, cause, fix.",
+  "guide": "Use this when something broke, during or after fixing it.\n\n- **what_happened**: who was affected, how, and for how long.\n- **status**: a callout: `danger` while ongoing, `success` once resolved.\n- **timeline**: a table of time and event, oldest first. Use UTC.\n- **cause**: the root cause, not only the trigger.\n- **fix**: what you did to stop it.\n- **follow_ups**: a checklist of work to prevent it happening again.\n\nTip: stick to facts; avoid blame.",
+  "slots": [
+    {
+      "name": "what_happened",
+      "block": "text",
+      "required": true,
+      "label": "What happened",
+      "hint": "Who was affected, how, how long"
+    },
+    {
+      "name": "status",
+      "block": "callout",
+      "label": "Status",
+      "hint": "Ongoing or resolved"
+    },
+    {
+      "name": "timeline",
+      "block": "table",
+      "label": "Timeline",
+      "hint": "Time (UTC) and event"
+    },
+    {
+      "name": "cause",
+      "block": "text",
+      "label": "Cause",
+      "hint": "The root cause"
+    },
+    {
+      "name": "fix",
+      "block": "text",
+      "label": "Fix",
+      "hint": "What stopped it"
+    },
+    {
+      "name": "follow_ups",
+      "block": "checklist",
+      "label": "Follow-ups",
+      "hint": "Work to prevent a repeat"
+    }
+  ],
+  "example": {
+    "what_happened": "Uploads failed for all users for 22 minutes.",
+    "status": {
+      "tone": "success",
+      "text": "Resolved at 14:32 UTC."
+    },
+    "timeline": {
+      "columns": [
+        "Time (UTC)",
+        "Event"
+      ],
+      "rows": [
+        [
+          "14:10",
+          "Storage credentials rotated"
+        ],
+        [
+          "14:12",
+          "Upload errors start"
+        ],
+        [
+          "14:30",
+          "Old key restored"
+        ],
+        [
+          "14:32",
+          "Uploads recover"
+        ]
+      ]
+    },
+    "cause": "The rotation script updated the secret but the server caches credentials until restart.",
+    "fix": "Restored the old key, then restarted the server with the new one.",
+    "follow_ups": [
+      {
+        "text": "Reload credentials without restart",
+        "done": false
+      },
+      {
+        "text": "Alert on upload error rate above 5%",
+        "done": false
+      }
+    ]
+  }
+}

@@ -1,0 +1,99 @@
+{
+  "name": "test-report",
+  "use_for": "Test or CI results.",
+  "guide": "Use this after running tests or CI.\n\n- **verdict**: a callout. Tone `success` if all passed, `danger` if anything failed, `warning` for flaky or skipped.\n- **counts**: key numbers: passed, failed, skipped, duration.\n- **failures**: a table with one row per failing test: name and short reason.\n- **output**: the relevant part of the log for the first failure.\n- **coverage**: coverage numbers, with before values if you know them.\n- **screenshots**: for UI tests, shots of failures.\n\nTip: put the failure that matters most first.",
+  "slots": [
+    {
+      "name": "verdict",
+      "block": "callout",
+      "required": true,
+      "label": "Verdict",
+      "hint": "Pass or fail in one line"
+    },
+    {
+      "name": "counts",
+      "block": "metrics",
+      "required": true,
+      "label": "Counts",
+      "hint": "Passed, failed, skipped, duration"
+    },
+    {
+      "name": "failures",
+      "block": "table",
+      "label": "Failures",
+      "hint": "Test name and reason, one row each"
+    },
+    {
+      "name": "output",
+      "block": "code",
+      "label": "Output",
+      "hint": "Log for the first failure"
+    },
+    {
+      "name": "coverage",
+      "block": "metrics",
+      "label": "Coverage",
+      "hint": "Coverage numbers"
+    },
+    {
+      "name": "screenshots",
+      "block": "gallery",
+      "label": "Screenshots",
+      "hint": "Shots of UI test failures"
+    }
+  ],
+  "example": {
+    "verdict": {
+      "tone": "danger",
+      "text": "2 of 214 tests failed, both in checkout."
+    },
+    "counts": [
+      {
+        "label": "Passed",
+        "value": 210
+      },
+      {
+        "label": "Failed",
+        "value": 2,
+        "good": "down"
+      },
+      {
+        "label": "Skipped",
+        "value": 2
+      },
+      {
+        "label": "Duration",
+        "value": "48 s"
+      }
+    ],
+    "failures": {
+      "columns": [
+        "Test",
+        "Reason"
+      ],
+      "rows": [
+        [
+          "TestCheckoutPromo",
+          "expected total 90, got 100"
+        ],
+        [
+          "TestCheckoutEmptyCart",
+          "timeout after 5s"
+        ]
+      ]
+    },
+    "output": {
+      "language": "text",
+      "code": "--- FAIL: TestCheckoutPromo (0.02s)\n    checkout_test.go:88: expected total 90, got 100"
+    },
+    "coverage": [
+      {
+        "label": "Lines",
+        "value": 81.4,
+        "before": 79.9,
+        "unit": "%",
+        "good": "up"
+      }
+    ]
+  }
+}

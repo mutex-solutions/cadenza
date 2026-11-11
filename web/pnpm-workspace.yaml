@@ -1,0 +1,10 @@
+packages:
+  - packages/*
+  - apps/*
+
+# Only install versions published at least 14 days ago (owner rule), for
+# direct and indirect dependencies alike.
+minimumReleaseAge: 20160
+
+onlyBuiltDependencies:
+  - esbuild

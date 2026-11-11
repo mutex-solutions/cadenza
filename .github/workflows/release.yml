@@ -1,0 +1,97 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: pnpm/action-setup@v5
+        with:
+          package_json_file: web/package.json
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: web/.nvmrc
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Build the web app into the server
+        run: make web
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v7
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push the server image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          build-args: VERSION=${{ github.ref_name }}
+          tags: |
+            ghcr.io/mutex-solutions/cadenza:${{ github.ref_name }}
+            ghcr.io/mutex-solutions/cadenza:latest
+
+      - name: Update Homebrew tap
+        env:
+          TAP_DEPLOY_KEY: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
+        run: |
+          if [ -z "${TAP_DEPLOY_KEY}" ]; then
+            echo "HOMEBREW_TAP_DEPLOY_KEY not set; skipping tap update."
+            exit 0
+          fi
+          ver="${GITHUB_REF_NAME#v}"
+          for i in $(seq 1 10); do
+            curl -fsSL "https://github.com/${GITHUB_REPOSITORY}/releases/download/v${ver}/checksums.txt" -o /tmp/sums.txt && break
+            sleep 5
+          done
+          sh scripts/gen-formula.sh "$ver" /tmp/sums.txt > /tmp/cadenza.rb
+
+          mkdir -p ~/.ssh
+          printf '%s\n' "${TAP_DEPLOY_KEY}" > ~/.ssh/tap_deploy_key
+          chmod 600 ~/.ssh/tap_deploy_key
+          # GitHub's published ed25519 host key, pinned rather than fetched (TOFU).
+          echo 'github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl' >> ~/.ssh/known_hosts
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/tap_deploy_key -o IdentitiesOnly=yes"
+
+          git clone --quiet git@github.com:mutex-solutions/homebrew-tap.git /tmp/tap
+          mkdir -p /tmp/tap/Formula
+          cp /tmp/cadenza.rb /tmp/tap/Formula/cadenza.rb
+          cd /tmp/tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Stage first: plain `git diff` ignores a formula that is new to the tap.
+          git add Formula/cadenza.rb
+          if ! git diff --cached --quiet; then
+            git commit -m "cadenza ${ver}"
+            git push
+          fi

@@ -1,0 +1,50 @@
+{
+  "name": "research",
+  "use_for": "Findings from reading or searching.",
+  "guide": "Use this to report what you learned from docs, code or the web.\n\n- **question**: what you set out to find.\n- **findings**: one bullet per finding, with the key fact first.\n- **sources**: links to what you read, with clear titles. Only http/https links.\n- **recommendation**: a callout with what you suggest, if anything.\n\nTip: say when sources disagree or are old.",
+  "slots": [
+    {
+      "name": "question",
+      "block": "text",
+      "required": true,
+      "label": "Question",
+      "hint": "What you set out to find"
+    },
+    {
+      "name": "findings",
+      "block": "list",
+      "required": true,
+      "label": "Findings",
+      "hint": "Key fact first in each bullet"
+    },
+    {
+      "name": "sources",
+      "block": "links",
+      "label": "Sources",
+      "hint": "Links to what you read"
+    },
+    {
+      "name": "recommendation",
+      "block": "callout",
+      "label": "Recommendation",
+      "hint": "What you suggest"
+    }
+  ],
+  "example": {
+    "question": "Can MCP tool calls wait longer than 60 seconds?",
+    "findings": [
+      "Codex and Cursor cancel tool calls after about 60 s",
+      "The MCP spec allows progress notifications, but not all clients reset their timeout on them"
+    ],
+    "sources": [
+      {
+        "title": "Model Context Protocol specification",
+        "url": "https://modelcontextprotocol.io/specification"
+      }
+    ],
+    "recommendation": {
+      "tone": "info",
+      "text": "Cap waits at 45 s and let the agent call again."
+    }
+  }
+}

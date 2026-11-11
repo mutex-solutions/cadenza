@@ -1,0 +1,19 @@
+# gitleaks configuration for Cadenza.
+# Extends the default ruleset and adds Cadenza's own key formats.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Placeholders and test fixtures, not real secrets"
+regexes = [
+  '''cz_[a-z]+_example[A-Za-z0-9_-]*''',
+]
+# Test files are scanned too. Synthetic keys in tests are split across string
+# concatenations so the rules never see them whole.
+
+[[rules]]
+id = "cadenza-key"
+description = "Cadenza machine or session key"
+regex = '''\bcz_(mk|sk)_[A-Za-z0-9_-]{32,}'''
+keywords = ["cz_mk_", "cz_sk_"]

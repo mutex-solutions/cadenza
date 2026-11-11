@@ -1,0 +1,60 @@
+{
+  "name": "feature-demo",
+  "use_for": "Showing a new feature working.",
+  "guide": "Use this to show a finished feature in action.\n\n- **summary**: what the feature does for the user, in plain words.\n- **walkthrough**: a recording of the main path from start to finish. Keep it under a minute.\n- **screenshots**: key screens, each with a caption saying what it shows.\n- **try_it**: exact steps or a command so the owner can try it themselves.\n- **limits**: what it does not do yet.\n\nTip: record with realistic data, not \"test test\".",
+  "slots": [
+    {
+      "name": "summary",
+      "block": "text",
+      "required": true,
+      "label": "What it does",
+      "hint": "What the feature does for the user",
+      "max": 2000
+    },
+    {
+      "name": "walkthrough",
+      "block": "video",
+      "label": "Walkthrough",
+      "hint": "Recording of the main path"
+    },
+    {
+      "name": "screenshots",
+      "block": "gallery",
+      "label": "Screenshots",
+      "hint": "Key screens with captions"
+    },
+    {
+      "name": "try_it",
+      "block": "text",
+      "label": "How to try it",
+      "hint": "Steps, a URL or a command"
+    },
+    {
+      "name": "limits",
+      "block": "list",
+      "label": "Limits",
+      "hint": "What it does not do yet"
+    }
+  ],
+  "example": {
+    "summary": "You can now export any report as CSV from the **Share** menu.",
+    "walkthrough": {
+      "file": "./demo/export.mp4"
+    },
+    "screenshots": [
+      {
+        "file": "./demo/share-menu.png",
+        "caption": "New Export CSV item"
+      },
+      {
+        "file": "./demo/done.png",
+        "caption": "Download finished toast"
+      }
+    ],
+    "try_it": "Open any report, click **Share → Export CSV**.",
+    "limits": [
+      "Exports at most 50,000 rows",
+      "No Excel format yet"
+    ]
+  }
+}

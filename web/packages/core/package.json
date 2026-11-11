@@ -1,0 +1,21 @@
+{
+  "name": "@cadenza/core",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "6.2.6",
+    "typescript": "7.0.2",
+    "vitest": "5.0.5"
+  }
+}

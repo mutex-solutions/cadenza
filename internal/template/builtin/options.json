@@ -1,0 +1,71 @@
+{
+  "name": "options",
+  "use_for": "Asking the owner to choose between options.",
+  "guide": "Use this when you need the owner to decide. Posting it also asks a question whose choices are the option titles.\n\n- **question**: the decision, as a question ending in \"?\".\n- **options**: 2-6 options. Each has a short `title` (this is the button text), a `text` explaining it, and `pros` and `cons`.\n- **recommendation**: a callout with the option you would pick and why.\n- **context**: background the owner needs, if any.\n\nTips: make titles short and distinct (\"Postgres\", \"SQLite\"). Put your recommended option first.",
+  "question": {
+    "from_slot": "options",
+    "text_slot": "question"
+  },
+  "slots": [
+    {
+      "name": "question",
+      "block": "text",
+      "required": true,
+      "label": "Question",
+      "hint": "The decision, as a question",
+      "max": 500
+    },
+    {
+      "name": "options",
+      "block": "choices",
+      "required": true,
+      "label": "Options",
+      "hint": "2-6 options with pros and cons",
+      "max": 6
+    },
+    {
+      "name": "recommendation",
+      "block": "callout",
+      "label": "Recommendation",
+      "hint": "Which you would pick and why"
+    },
+    {
+      "name": "context",
+      "block": "text",
+      "label": "Context",
+      "hint": "Background, if needed"
+    }
+  ],
+  "example": {
+    "question": "Which database should the trial mode use?",
+    "options": [
+      {
+        "title": "SQLite",
+        "text": "One file next to the binary.",
+        "pros": [
+          "Zero setup",
+          "Fast for one user"
+        ],
+        "cons": [
+          "Needs a migration path to Postgres"
+        ]
+      },
+      {
+        "title": "Embedded Postgres",
+        "text": "Download and run Postgres on first start.",
+        "pros": [
+          "Same database as production"
+        ],
+        "cons": [
+          "150 MB download",
+          "Slow first start"
+        ]
+      }
+    ],
+    "recommendation": {
+      "tone": "info",
+      "text": "**SQLite**: the trial should start in under a minute."
+    },
+    "context": "Trial mode is the `cadenza serve --trial` path: one user, local only, started from the README."
+  }
+}

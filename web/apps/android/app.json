@@ -1,0 +1,39 @@
+{
+  "expo": {
+    "name": "Cadenza",
+    "slug": "cadenza",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "platforms": ["android"],
+    "android": {
+      "package": "dev.cadenza.app",
+      "edgeToEdgeEnabled": true,
+      "permissions": ["CAMERA", "POST_NOTIFICATIONS"],
+      "blockedPermissions": ["android.permission.RECORD_AUDIO", "android.permission.ACCESS_FINE_LOCATION", "android.permission.ACCESS_COARSE_LOCATION"]
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Cadenza uses your photos so you can attach them to your answers.",
+          "cameraPermission": "Cadenza uses the camera so you can take a photo for your answer.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "defaultChannel": "default"
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
+    }
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "name": "progress",
+  "use_for": "Status on a long task.",
+  "guide": "Use this for regular updates on long work.\n\n- **summary**: where things stand in one or two sentences.\n- **done**: what finished since the last update.\n- **doing**: what is in progress now.\n- **next**: what comes after.\n- **blockers**: a callout (tone `warning` or `danger`) when you are stuck or need something.\n\nTip: keep it short; link to other posts for detail.",
+  "slots": [
+    {
+      "name": "summary",
+      "block": "text",
+      "required": true,
+      "label": "Summary",
+      "hint": "Where things stand",
+      "max": 1000
+    },
+    {
+      "name": "done",
+      "block": "list",
+      "label": "Done",
+      "hint": "Finished since the last update"
+    },
+    {
+      "name": "doing",
+      "block": "list",
+      "label": "Doing",
+      "hint": "In progress now"
+    },
+    {
+      "name": "next",
+      "block": "list",
+      "label": "Next",
+      "hint": "What comes after"
+    },
+    {
+      "name": "blockers",
+      "block": "callout",
+      "label": "Blockers",
+      "hint": "What you are stuck on"
+    }
+  ],
+  "example": {
+    "summary": "Migration is 60% done; on track for Friday.",
+    "done": [
+      "Users and teams tables migrated",
+      "Backfill job tested on staging"
+    ],
+    "doing": [
+      "Migrating the events table (40M rows)"
+    ],
+    "next": [
+      "Switch reads to the new schema",
+      "Remove old columns"
+    ],
+    "blockers": {
+      "tone": "warning",
+      "text": "Need a 30-minute maintenance window for the final switch."
+    }
+  }
+}

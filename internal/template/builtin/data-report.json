@@ -1,0 +1,108 @@
+{
+  "name": "data-report",
+  "use_for": "An analysis of data.",
+  "guide": "Use this to report what you found in data.\n\n- **headline**: the 2-5 numbers that matter most.\n- **chart**: one Vega-Lite chart that shows the main finding.\n- **table**: supporting rows (keep under 50 for readability).\n- **findings**: one bullet per finding, most important first. Say what it means, not only what it is.\n- **method**: data source, date range, filters, caveats.\n\nTip: if a finding is uncertain, say how sure you are.",
+  "slots": [
+    {
+      "name": "headline",
+      "block": "metrics",
+      "required": true,
+      "label": "Headline numbers",
+      "hint": "The numbers that matter most"
+    },
+    {
+      "name": "chart",
+      "block": "chart",
+      "label": "Chart",
+      "hint": "The main finding as a chart"
+    },
+    {
+      "name": "table",
+      "block": "table",
+      "label": "Table",
+      "hint": "Supporting rows"
+    },
+    {
+      "name": "findings",
+      "block": "list",
+      "required": true,
+      "label": "Findings",
+      "hint": "Most important first"
+    },
+    {
+      "name": "method",
+      "block": "text",
+      "label": "Method",
+      "hint": "Source, range, filters, caveats"
+    }
+  ],
+  "example": {
+    "headline": [
+      {
+        "label": "Weekly active users",
+        "value": 12840,
+        "before": 11920,
+        "good": "up"
+      },
+      {
+        "label": "Churn",
+        "value": "3.1%",
+        "before": "3.8%",
+        "good": "down"
+      }
+    ],
+    "chart": {
+      "mark": "line",
+      "data": {
+        "values": [
+          {
+            "week": "W1",
+            "users": 11920
+          },
+          {
+            "week": "W2",
+            "users": 12210
+          },
+          {
+            "week": "W3",
+            "users": 12840
+          }
+        ]
+      },
+      "encoding": {
+        "x": {
+          "field": "week",
+          "type": "ordinal"
+        },
+        "y": {
+          "field": "users",
+          "type": "quantitative"
+        }
+      }
+    },
+    "table": {
+      "columns": [
+        "Plan",
+        "Users",
+        "Churn %"
+      ],
+      "rows": [
+        [
+          "Free",
+          9100,
+          4.2
+        ],
+        [
+          "Pro",
+          3740,
+          0.9
+        ]
+      ]
+    },
+    "findings": [
+      "Growth comes from Pro: free users are flat",
+      "Churn dropped after the onboarding email went out on W2"
+    ],
+    "method": "Events table, last 3 full weeks, excluding staff and test accounts."
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "cadenza-web",
+  "private": true,
+  "license": "Apache-2.0",
+  "packageManager": "pnpm@10.33.2",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "build": "pnpm --filter @cadenza/web build"
+  }
+}
