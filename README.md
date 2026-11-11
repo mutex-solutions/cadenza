@@ -1,77 +1,78 @@
-# Vizo
+# Cadenza
 
-**Show your agents' work, review it, and unblock them — from any device.**
+**Your coding agents show you their work and ask you questions. You review and answer from your phone or laptop.**
 
-Vizo is a fast web surface where AI agents publish what they've made — code, diffs,
-diagrams, pages, video — and where you review it and answer their questions, on your
-phone or laptop. It is built for an agent-first workflow: the agents do the work
-locally, and Vizo is where *you* look, judge, and steer.
+Agents do real work on your machines, but the only way to see it is a long transcript. A screenshot, a short recording,
+a page or a chart tells you in seconds. And when an agent needs a decision, it waits idle or guesses.
 
-> You are the lock. Agents run free, but at the sections that matter they must acquire
-> your review before proceeding — and they block (or keep working async) until you
-> release them with feedback.
+Cadenza is a tool any coding agent calls:
 
-## What it is
+```sh
+cadenza show --title "Checkout redesign" --template ui-change \
+  --data '{"summary": "Promo field below the total; one step instead of two.",
+           "before": {"file": "./shots/before.png"}, "after": {"file": "./shots/after.png"}}'
 
-- A **review surface**, not an editor. You don't write code here; you look at what the
-  agent made and respond.
-- A **human-in-the-loop protocol**. Agents call `show(...)` to publish an artifact and
-  `ask(...)` to request your judgment, anchored to a specific region. You reply; they
-  `poll(...)` and unblock.
-- **Device-agnostic and performance-first.** Highly optimized for both desktop and
-  mobile, so review from your pocket is a first-class experience.
-
-## Viewers (what an agent can "show")
-
-- **Diff / code review** — line-anchored, grouped by intent.
-- **Single file with annotations** — the agent pins its own uncertainty to line ranges.
-- **Directory / repo** — read-only tree + syntax highlight, scoped to an allowlisted root.
-- **Diagram** — Mermaid (native), Excalidraw / tldraw for freeform.
-- **Webpage** — sandboxed live page, comments anchored to DOM elements.
-- **Video** — screen recordings, comments anchored to timestamps.
-- **Markdown / plan** — the agent's writeup, with approve / annotate.
-
-All viewers share one primitive: **region-anchored comment + approve**.
-
-## The feedback loop
-
-```
-agent (local) ──show(artifact)──►  Vizo surface (edge)  ◄──review──  you (phone/laptop)
-      ▲                                                                    │
-      └──────────────────────────  poll(answer) / unblock  ◄──────────────┘
+cadenza ask "Keep the promo field visible?" --choice yes --choice no --waiting
+cadenza wait q_7k2… --timeout 30m      # run in the background; exits with the answer
 ```
 
-Agent-side API (delivered as an MCP server):
+Your phone buzzes with *"Claude Code · vm-03 — Checkout redesign: keep promo field visible?"*. You look at the
+before/after, tap **yes**, add a photo, and the agent carries on with both.
+
+- **Any agent.** Claude Code, Codex, Gemini, Hermes, Cursor: anything with a shell runs `cadenza`; MCP clients use
+  `cadenza mcp`; cloud agents use MCP on the server.
+- **Show, don't tell.** 15 built-in templates (ui-change, bug-fix, test-report, perf-compare, plan, options…),
+  custom templates agents make themselves, or plain files: images, video, PDFs, single-file web pages.
+- **Answer easily.** Pick a choice, write a note, attach a photo, approve or request changes, pin a comment to a
+  line or a spot in a screenshot, sketch.
+- **Never blocks an agent.** Asking returns at once; waiting runs in the background with a timeout the agent picks.
+- **One inbox** for every machine and agent. Web app and Android app, with notifications only when you're needed.
+- **Yours.** Self-hosted, open source (Apache-2.0). Files go straight between your machines, your phone and your
+  own S3-compatible storage; the server never touches file bytes.
+
+> **Status:** under active development; not released yet.
+
+## Try it in a minute
+
+```sh
+# 1. Run a server (trial mode: SQLite and files on local disk).
+docker run -p 8080:8080 -v cadenza:/data ghcr.io/mutex-solutions/cadenza
+#    Open http://localhost:8080 and set your password.
+
+# 2. On each machine where agents run:
+curl -fsSL https://raw.githubusercontent.com/mutex-solutions/cadenza/main/install.sh | sh
+cadenza login http://localhost:8080      # type the code it shows into the app
+cadenza setup                            # teaches Claude Code, Codex and Gemini to use Cadenza
+```
+
+For real use (Postgres, S3 storage, HTTPS, Android notifications) see [docs/self-hosting.md](docs/self-hosting.md).
+The guide agents read is [docs/cadenza.md](docs/cadenza.md).
+
+## How it works
 
 ```
-show(kind, payload, {root})            -> handle      # file | diff | dir | diagram | page | video | md
-annotate(handle, region, note)                        # the agent's own margin notes
-ask(question, {handle?, region?, mode, choices?}) -> requestId   # mode: "block" | "async"
-poll(requestId)   -> "pending" | { decision, text, annotations[] }
+ each machine                         server (Go)                    you
+ ─────────────                        ───────────                    ───
+ agent ──► cadenza show / ask ──────► API · inbox · notifications ──► web app, Android app
+             │  converts files                │ Postgres or SQLite        ▲
+             └── uploads by signed link ──► S3-compatible storage ───────┘ (signed links)
 ```
 
-## Guardrails & security
+Each machine is paired once with a short code; each agent session gets its own key, tied to the agent's session
+id so resuming keeps its threads. Nothing runs in the background on your machines.
 
-- Only the **local bridge** touches the filesystem; the edge and web client never do.
-- The bridge is configured with allowed `roots`, `maxFileBytes`, and redaction rules;
-  anything outside the roots is refused before it leaves the machine.
-- Owner auth via **WebAuthn passkey**; the bridge authenticates with a one-time
-  pre-shared key, then short-lived signed tokens.
-- Artifacts are **ephemeral by default** (TTL).
+## Building from source
 
-## Architecture (proposed)
+Go 1.26+, and Node 24 with pnpm 10 for the web app.
 
-- **Agent bridge** — local daemon + MCP server; has FS access, enforces the root
-  allowlist, does syntax highlighting / diffing before pushing.
-- **Edge surface** — Cloudflare Workers + a Durable Object per review space, holding live
-  request state and fanning out updates over WebSocket/SSE.
-- **Web client** — lightweight framework (Svelte / Solid), virtualized rendering, lazy
-  directory loading.
+```sh
+make build        # bin/cadenza and bin/cadenza-server (without the web app)
+make web build    # with the web app embedded
+make test         # Go tests; web tests: cd web && pnpm -r test
+```
 
-## Status
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how the code is organised.
 
-Early — name and concept locked, scoping the first build. See the thin-MVP plan (coming).
+## License
 
----
-
-Part of [mutex-solutions](https://github.com/mutex-solutions).
+[Apache License 2.0](LICENSE).

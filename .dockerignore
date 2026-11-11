@@ -1,0 +1,7 @@
+bin/
+dist/
+data/
+**/node_modules/
+web/**/dist/
+web/**/.expo/
+.git/

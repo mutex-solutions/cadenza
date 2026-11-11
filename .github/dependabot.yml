@@ -1,0 +1,15 @@
+version: 2
+updates:
+  # Dependencies are pinned and upgraded deliberately in one window a year,
+  # so only security updates are opened automatically.
+  - package-ecosystem: gomod
+    directory: /
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 0
+  - package-ecosystem: npm
+    directory: /web
+    schedule: { interval: weekly }
+    open-pull-requests-limit: 0
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: monthly }

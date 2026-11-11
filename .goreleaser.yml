@@ -1,0 +1,67 @@
+version: 2
+
+project_name: cadenza
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  # The command agents run on each machine.
+  - id: cadenza
+    main: ./cmd/cadenza
+    binary: cadenza
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -tags=nodynamic
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X main.Version={{.Version}}
+
+  # The server (API, web app, notifications).
+  - id: cadenza-server
+    main: ./cmd/cadenza-server
+    binary: cadenza-server
+    env:
+      - CGO_ENABLED=0
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+    ldflags:
+      - -s -w -X main.Version={{.Version}}
+
+archives:
+  - id: cadenza
+    ids: [cadenza]
+    formats: [tar.gz]
+    # Lowercase, stable names: cadenza_linux_amd64.tar.gz etc.
+    name_template: "cadenza_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files: [LICENSE, NOTICE]
+  - id: cadenza-server
+    ids: [cadenza-server]
+    formats: [tar.gz]
+    name_template: "cadenza-server_{{ .Os }}_{{ .Arch }}"
+    files: [LICENSE, NOTICE]
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "^chore:"
+
+# The Homebrew formula (cadenza only) is written by a step in
+# .github/workflows/release.yml; see RELEASING.md.
+
+release:
+  draft: false
+  prerelease: auto
