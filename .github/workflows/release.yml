@@ -26,7 +26,7 @@ jobs:
         with:
           package_json_file: web/package.json
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version-file: web/.nvmrc
           cache: pnpm
