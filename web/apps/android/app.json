@@ -6,12 +6,20 @@
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "platforms": ["android"],
+    "platforms": [
+      "android"
+    ],
     "android": {
       "package": "dev.cadenza.app",
-      "edgeToEdgeEnabled": true,
-      "permissions": ["CAMERA", "POST_NOTIFICATIONS"],
-      "blockedPermissions": ["android.permission.RECORD_AUDIO", "android.permission.ACCESS_FINE_LOCATION", "android.permission.ACCESS_COARSE_LOCATION"]
+      "permissions": [
+        "CAMERA",
+        "POST_NOTIFICATIONS"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
+      ]
     },
     "plugins": [
       "expo-secure-store",
@@ -28,7 +36,8 @@
         {
           "defaultChannel": "default"
         }
-      ]
+      ],
+      "./plugins/cleartext.js"
     ],
     "extra": {
       "eas": {
