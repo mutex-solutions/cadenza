@@ -6,7 +6,7 @@
 // The activity handles these changes itself (React Native re-lays out from
 // useWindowDimensions) instead of Android destroying and recreating it, which
 // would reset the app to the inbox.
-const { withAndroidManifest } = require("expo/config-plugins");
+const { withAndroidManifest, withGradleProperties } = require("expo/config-plugins");
 
 const HANDLED = ["keyboard", "keyboardHidden", "orientation", "screenSize", "screenLayout", "smallestScreenSize", "density", "uiMode"];
 
@@ -23,9 +23,28 @@ function setLargeScreen(manifest) {
   return manifest;
 }
 
+/**
+ * setLegacyPackaging stores native libraries compressed and unpacks them at
+ * install. Without it the app loads them straight from the APK, which fails
+ * on x86_64 emulators running the arm64 APK through translation (the app
+ * crashed at start there). It also makes the download smaller.
+ */
+function setLegacyPackaging(props) {
+  const out = props.filter((p) => !(p.type === "property" && p.key === "expo.useLegacyPackaging"));
+  out.push({ type: "property", key: "expo.useLegacyPackaging", value: "true" });
+  return out;
+}
+
 module.exports = (config) =>
-  withAndroidManifest(config, (c) => {
-    c.modResults = setLargeScreen(c.modResults);
-    return c;
-  });
+  withGradleProperties(
+    withAndroidManifest(config, (c) => {
+      c.modResults = setLargeScreen(c.modResults);
+      return c;
+    }),
+    (c) => {
+      c.modResults = setLegacyPackaging(c.modResults);
+      return c;
+    },
+  );
 module.exports.setLargeScreen = setLargeScreen;
+module.exports.setLegacyPackaging = setLegacyPackaging;
