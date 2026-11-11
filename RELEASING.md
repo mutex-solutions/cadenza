@@ -46,7 +46,12 @@ When a release changes the API in a way older CLIs cannot handle, raise `CADENZA
 
 ## Android app
 
-The Android app is built with EAS from `web/apps/android`; see its README. Google Play requires a yearly target
+Each version tag also runs `.github/workflows/android.yml`, which builds `cadenza-android-arm64.apk` and attaches it
+to the release, for installing on a phone with `adb install`. That APK is signed with the build's debug key: fine
+for your own devices, not for the Play Store. To attach an APK to an existing release, run the workflow by hand
+with the tag.
+
+For the Play Store, the Android app is built with EAS from `web/apps/android`; see its README. Google Play requires a yearly target
 SDK update: plan it into the yearly upgrade window with the other dependency updates.
 
 ## Homebrew tap
