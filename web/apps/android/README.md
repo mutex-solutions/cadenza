@@ -69,3 +69,18 @@ Release build on a Pixel 6a emulator profile (Android 15, x86_64 on KVM), Novemb
 Every release has `cadenza-android-arm64.apk` attached (debug-signed, for your own phone):
 `adb install -r cadenza-android-arm64.apk`. To build it yourself: `npx expo prebuild --platform android`, then
 `cd android && ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a`.
+
+## Tablets and foldables
+
+The app follows window size classes (`src/lib/layout.ts`): compact under 600 dp, medium 600–839, expanded 840+.
+
+- From 700 dp wide it shows the inbox and the open thread side by side. That covers tablets and a book-style
+  foldable's inner screen (Galaxy Z Fold, about 707–830 dp) in both orientations; a phone or the cover screen
+  keeps one pane.
+- Forms, settings, the reply panel and posts have maximum widths so nothing stretches across a big screen.
+- Orientation is not locked. Rotation, fold/unfold, split-screen resizing and density changes are handled in
+  place (`plugins/large-screens.js` sets `configChanges` and `resizeableActivity`), so the open thread stays open.
+
+Checked on the emulator at phone, Fold inner (portrait and landscape), Fold cover and tablet (portrait and
+landscape) sizes, including density changes, with the thread staying open and the process never restarting. Not
+covered: a real Fold's hinge, half-folded postures (tabletop/book) and moving between two physical displays.

@@ -9,7 +9,8 @@ import type { HostMarker, HostPost } from "../lib/bridge";
 import { replyBarLabel, shouldMarkRead } from "../lib/inbox";
 import { useTheme } from "../theme";
 
-export function ThreadScreen(props: { id: string }) {
+/** One thread. embedded: shown beside the inbox (two-pane), so there is no Back button. */
+export function ThreadScreen(props: { id: string; embedded?: boolean }) {
   const { colors } = useTheme();
   const { client, sync, nav, serverUrl, files } = useApp();
   const state = useSync();
@@ -59,7 +60,7 @@ export function ThreadScreen(props: { id: string }) {
   if (!view) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg }}>
-        <Header title="Thread" left={<Button title="Back" onPress={() => nav({ type: "pop" })} />} />
+        <Header title="Thread" left={props.embedded ? undefined : <Button title="Back" onPress={() => nav({ type: "pop" })} />} />
         <Message kind={error ? "error" : "info"}>{error || "Loading…"}</Message>
       </View>
     );
@@ -80,7 +81,7 @@ export function ThreadScreen(props: { id: string }) {
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <Header
         title={t.title}
-        left={<Button title="Back" onPress={() => nav({ type: "pop" })} />}
+        left={props.embedded ? undefined : <Button title="Back" onPress={() => nav({ type: "pop" })} />}
         right={<Button title={archived ? "Reopen" : "Archive"} onPress={() => setStatus(archived ? "active" : "archived")} />}
       />
       <Text style={[styles.meta, { color: colors.muted }]}>

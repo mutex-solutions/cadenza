@@ -3,7 +3,7 @@
     "name": "Cadenza",
     "slug": "cadenza",
     "version": "0.1.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "platforms": [
@@ -37,7 +37,8 @@
           "defaultChannel": "default"
         }
       ],
-      "./plugins/cleartext.js"
+      "./plugins/cleartext.js",
+      "./plugins/large-screens.js"
     ],
     "extra": {
       "eas": {

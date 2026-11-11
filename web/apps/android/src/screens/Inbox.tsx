@@ -4,11 +4,13 @@ import type { ThreadSummary } from "@cadenza/core";
 import { Button, Header, Message } from "../components/ui";
 import { errorText, useApp, useSync } from "../context";
 import { inboxRows, type InboxRow } from "../lib/inbox";
+import { COLUMN_MAX_WIDTH } from "../lib/layout";
 import { useTheme } from "../theme";
 
 const CONNECTION: Record<string, string> = { connecting: "Connecting…", live: "Up to date", polling: "Up to date", offline: "Offline — showing saved copy" };
 
-export function InboxScreen() {
+/** The thread list. selectedId highlights the thread open beside it (two-pane layout). */
+export function InboxScreen(props: { selectedId: string | null }) {
   const { colors } = useTheme();
   const { client, sync, nav } = useApp();
   const state = useSync();
@@ -44,8 +46,12 @@ export function InboxScreen() {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`${item.title}. ${item.subtitle}. ${item.status}.${item.questions ? ` ${item.questions} open questions.` : ""}${item.unread ? " Unread." : ""}`}
-      onPress={() => nav({ type: "push", screen: { name: "thread", id: item.id } })}
-      style={({ pressed }) => [styles.row, { borderBottomColor: colors.line, backgroundColor: pressed ? colors.surface : colors.bg }]}
+      accessibilityState={{ selected: item.id === props.selectedId }}
+      onPress={() => nav({ type: "openThread", id: item.id })}
+      style={({ pressed }) => [
+        styles.row,
+        { borderBottomColor: colors.line, backgroundColor: pressed || item.id === props.selectedId ? colors.surface : colors.bg },
+      ]}
     >
       <View style={[styles.dot, { backgroundColor: item.unread ? colors.accent : "transparent" }]} />
       <View style={{ flex: 1 }}>
@@ -77,6 +83,7 @@ export function InboxScreen() {
       <Text style={[styles.status, { color: colors.muted }]}>{CONNECTION[state.connection] ?? ""}</Text>
       {error || state.error ? <Message kind="error">{error || errorText(state.error)}</Message> : null}
       <FlatList
+        style={styles.list}
         data={rows}
         keyExtractor={(r) => r.id}
         renderItem={renderItem}
@@ -99,4 +106,6 @@ const styles = StyleSheet.create({
   badge: { fontSize: 12, fontWeight: "700", paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, overflow: "hidden" },
   status: { fontSize: 12, textAlign: "center", paddingVertical: 4 },
   empty: { padding: 24, textAlign: "center", fontSize: 15 },
+  // One column of threads never grows wider than this (medium screens in one pane).
+  list: { width: "100%", maxWidth: COLUMN_MAX_WIDTH, alignSelf: "center" },
 });
