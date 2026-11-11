@@ -17,9 +17,9 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
           cache: true
@@ -34,7 +34,14 @@ jobs:
           fi
 
       - name: go vet
-        run: go vet ./...
+        run: go vet -tags nodynamic ./...
+
+      - name: Install sqlc
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          SQLC_VERSION: 1.31.1
+        run: |
+          curl -sSfL "https://downloads.sqlc.dev/sqlc_${SQLC_VERSION}_linux_amd64.tar.gz" | sudo tar -xz -C /usr/local/bin sqlc
 
       - name: Generated files are up to date
         if: matrix.os == 'ubuntu-latest'
@@ -43,7 +50,7 @@ jobs:
           git diff --exit-code
 
       - name: Test
-        run: go test -race ./...
+        run: go test -tags nodynamic -race ./...
 
   postgres:
     name: Go store tests on Postgres
@@ -59,8 +66,8 @@ jobs:
           --health-cmd "pg_isready -U postgres"
           --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
           cache: true
@@ -76,11 +83,11 @@ jobs:
       run:
         working-directory: web
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v5
         with:
           package_json_file: web/package.json
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version-file: web/.nvmrc
           cache: pnpm
@@ -99,8 +106,8 @@ jobs:
         goos: [linux, darwin, windows]
         goarch: [amd64, arm64]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
           cache: true
