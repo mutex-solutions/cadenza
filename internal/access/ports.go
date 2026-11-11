@@ -33,8 +33,16 @@ type Repo interface {
 	GetAgentSession(ctx context.Context, owner kernel.OwnerID, id string) (*AgentSession, error)
 	CreateAgentSession(ctx context.Context, s *AgentSession) error
 	UpdateAgentSession(ctx context.Context, s *AgentSession) error
+	// ListAgentSessions lists unrevoked sessions on machines that are not removed.
+	ListAgentSessions(ctx context.Context, owner kernel.OwnerID) ([]SessionRow, error)
 
 	AppendEvent(ctx context.Context, e *eventlog.Event) error
+}
+
+// SessionRow is a live agent session with its machine's name.
+type SessionRow struct {
+	AgentSession
+	MachineName string
 }
 
 // MachineRow is a machine with its live session count, for listings.

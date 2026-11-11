@@ -81,6 +81,20 @@ func (s *Service) Register(ctx context.Context, owner kernel.OwnerID, in spec.De
 	return spec.DeviceOutput{DeviceID: d.ID}, s.repo.CreateDevice(ctx, d)
 }
 
+// Devices lists active devices, without their tokens.
+func (s *Service) Devices(ctx context.Context, owner kernel.OwnerID) (spec.DeviceList, error) {
+	ds, err := s.repo.ListActiveDevices(ctx, owner)
+	if err != nil {
+		return spec.DeviceList{}, err
+	}
+	out := spec.DeviceList{Devices: []spec.Device{}}
+	for _, d := range ds {
+		out.Devices = append(out.Devices, spec.Device{ID: d.ID, Provider: d.Provider, Name: d.Name,
+			CreatedAt: kernel.Millis(d.CreatedAt), LastOKAt: kernel.Millis(d.LastOKAt)})
+	}
+	return out, nil
+}
+
 // Remove stops notifications to a device.
 func (s *Service) Remove(ctx context.Context, owner kernel.OwnerID, id string) error {
 	d, err := s.repo.GetDevice(ctx, owner, id)

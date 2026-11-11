@@ -22,6 +22,8 @@ type Thread struct {
 	NextSeq   int
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	// ReadAt is when the owner last looked; a thread updated after it is unread.
+	ReadAt time.Time
 }
 
 // NewThread starts a thread for an agent session.
@@ -51,6 +53,12 @@ func (t *Thread) AddPost(now time.Time) (int, error) {
 	t.UpdatedAt = now
 	return seq, nil
 }
+
+// MarkRead records that the owner has seen the thread as it is now.
+func (t *Thread) MarkRead(now time.Time) { t.ReadAt = now }
+
+// Unread reports whether the thread changed since the owner last looked.
+func (t *Thread) Unread() bool { return t.UpdatedAt.After(t.ReadAt) }
 
 // Touch marks the thread changed, e.g. when a question is asked.
 func (t *Thread) Touch(now time.Time) { t.UpdatedAt = now }
@@ -89,6 +97,7 @@ func (t *Thread) ApplyVerdict(verdict string, now time.Time) error {
 		return kernel.Invalid("unknown verdict %q", verdict).WithFix("use %q or %q", spec.VerdictApprove, spec.VerdictRequestChanges)
 	}
 	t.UpdatedAt = now
+	t.ReadAt = now
 	return nil
 }
 
@@ -102,5 +111,6 @@ func (t *Thread) SetStatus(status string, now time.Time) error {
 	}
 	t.Status = status
 	t.UpdatedAt = now
+	t.ReadAt = now // the owner's own change is not news to them
 	return nil
 }

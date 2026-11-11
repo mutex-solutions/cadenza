@@ -394,6 +394,20 @@ func (s *Service) RevokeSession(ctx context.Context, owner kernel.OwnerID, id st
 	})
 }
 
+// Sessions lists live agent sessions, most recently used first.
+func (s *Service) Sessions(ctx context.Context, owner kernel.OwnerID) (spec.SessionList, error) {
+	rows, err := s.store.ListAgentSessions(ctx, owner)
+	if err != nil {
+		return spec.SessionList{}, err
+	}
+	out := spec.SessionList{Sessions: []spec.Session{}}
+	for _, r := range rows {
+		out.Sessions = append(out.Sessions, spec.Session{ID: r.ID, MachineID: r.MachineID, Machine: r.MachineName, Agent: r.Agent,
+			Cwd: r.Cwd, Repo: r.Repo, CreatedAt: kernel.Millis(r.CreatedAt), LastUsedAt: kernel.Millis(r.LastUsedAt)})
+	}
+	return out, nil
+}
+
 // Session returns an agent session (for display and checks).
 func (s *Service) Session(ctx context.Context, owner kernel.OwnerID, id string) (*AgentSession, error) {
 	return s.store.GetAgentSession(ctx, owner, id)

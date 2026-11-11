@@ -153,6 +153,17 @@ func testAccess(t *testing.T, s Store) {
 	if rows[0].Sessions != 0 {
 		t.Fatal("revoked sessions must not count")
 	}
+	live := &access.AgentSession{ID: "s_2", Owner: owner, MachineID: "m_2", Agent: "claude-code", ExternalID: "def",
+		KeyHash: "sk3", CreatedAt: t0, LastUsedAt: t0.Add(time.Hour)}
+	must(t, a.CreateAgentSession(ctx, live))
+	gone := &access.AgentSession{ID: "s_3", Owner: owner, MachineID: "m_1", Agent: "codex", ExternalID: "x",
+		KeyHash: "sk4", CreatedAt: t0, LastUsedAt: t0}
+	must(t, a.CreateAgentSession(ctx, gone)) // on the removed machine
+	sess, err := a.ListAgentSessions(ctx, owner)
+	must(t, err)
+	if len(sess) != 1 || sess[0].ID != "s_2" || sess[0].MachineName != "alpha" {
+		t.Fatalf("ListAgentSessions must skip revoked sessions and removed machines: %+v", sess)
+	}
 
 	p := &access.Pairing{ID: "pr_1", Code: "KQ7-4XM", SecretHash: "sh", Hostname: "box", Status: access.PairingPending,
 		CreatedAt: t0, ExpiresAt: t0.Add(10 * time.Minute)}
@@ -180,6 +191,11 @@ func testThreads(t *testing.T, s Store) {
 	newer := review.NewThread(a, "newer", t0.Add(time.Minute))
 	must(t, r.CreateThread(ctx, older))
 	must(t, r.CreateThread(ctx, newer))
+	older.MarkRead(t0.Add(time.Hour))
+	must(t, r.UpdateThread(ctx, older))
+	if g, _ := r.GetThread(ctx, owner, older.ID); !g.ReadAt.Equal(t0.Add(time.Hour)) {
+		t.Fatal("read_at lost")
+	}
 	got, err := r.LatestOpenThread(ctx, owner, sID)
 	must(t, err)
 	if got.ID != newer.ID {

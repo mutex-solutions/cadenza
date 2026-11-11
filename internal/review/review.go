@@ -98,6 +98,6 @@ type ThreadRow struct {
 func (r ThreadRow) Summary() spec.ThreadSummary {
 	return spec.ThreadSummary{
 		ID: r.ID, Title: r.Title, Status: r.Status, Machine: r.MachineName, Agent: r.Agent,
-		Posts: r.Posts, Open: r.OpenQuestions, UpdatedAt: kernel.Millis(r.UpdatedAt),
+		Posts: r.Posts, Open: r.OpenQuestions, UpdatedAt: kernel.Millis(r.UpdatedAt), Unread: r.Unread(),
 	}
 }

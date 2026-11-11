@@ -185,6 +185,7 @@ type Thread struct {
 	NextSeq   int64
 	CreatedAt int64
 	UpdatedAt int64
+	ReadAt    int64
 }
 
 type WebSession struct {

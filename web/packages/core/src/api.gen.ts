@@ -56,10 +56,22 @@ export interface AttachmentView {
   file?: FileRef;
 }
 
+export interface Device {
+  id: string;
+  provider: string;
+  name: string;
+  created_at: number;
+  last_ok_at: number;
+}
+
 export interface DeviceInput {
   provider: string;
   token: unknown;
   name: string;
+}
+
+export interface DeviceList {
+  devices: Device[];
 }
 
 export interface DeviceOutput {
@@ -267,6 +279,17 @@ export interface ResponsesOutput {
   cursor: number;
 }
 
+export interface Session {
+  id: string;
+  machine_id: string;
+  machine: string;
+  agent: string;
+  cwd?: string;
+  repo?: string;
+  created_at: number;
+  last_used_at: number;
+}
+
 export interface SessionKeyInput {
   agent: string;
   agent_session_id: string;
@@ -277,6 +300,10 @@ export interface SessionKeyInput {
 export interface SessionKeyOutput {
   session_id: string;
   session_key: string;
+}
+
+export interface SessionList {
+  sessions: Session[];
 }
 
 export interface SetupInput {
@@ -431,6 +458,7 @@ export const endpoints = {
   "logout": { method: "POST", path: "/v1/auth/logout", auth: "owner", summary: "Log out." },
   "me": { method: "GET", path: "/v1/me", auth: "owner", summary: "The logged-in owner." },
   "thread-view": { method: "GET", path: "/v1/threads/{id}", auth: "owner", summary: "One thread with its posts, questions and replies." },
+  "thread-read": { method: "POST", path: "/v1/threads/{id}/read", auth: "owner", summary: "Mark a thread read: it stops showing as unread until it changes again." },
   "thread-status": { method: "POST", path: "/v1/threads/{id}/status", auth: "owner", summary: "Approve, archive or reopen a thread." },
   "answer": { method: "POST", path: "/v1/questions/{id}/answer", auth: "owner", summary: "Answer a question." },
   "dismiss": { method: "POST", path: "/v1/questions/{id}/dismiss", auth: "owner", summary: "Dismiss a question without answering." },
@@ -440,8 +468,10 @@ export const endpoints = {
   "machines": { method: "GET", path: "/v1/machines", auth: "owner", summary: "Paired machines." },
   "machine-rename": { method: "POST", path: "/v1/machines/{id}/rename", auth: "owner", summary: "Rename a machine." },
   "machine-remove": { method: "DELETE", path: "/v1/machines/{id}", auth: "owner", summary: "Remove a machine; its keys stop working at once. What it showed stays." },
+  "sessions": { method: "GET", path: "/v1/sessions", auth: "owner", summary: "Live agent sessions on all machines." },
   "session-revoke": { method: "DELETE", path: "/v1/sessions/{id}", auth: "owner", summary: "Revoke one agent session's key." },
   "push-config": { method: "GET", path: "/v1/push/config", auth: "owner", summary: "Which push providers are enabled, and the Web Push public key." },
+  "devices": { method: "GET", path: "/v1/devices", auth: "owner", summary: "Phones and browsers that receive notifications." },
   "device-register": { method: "POST", path: "/v1/devices", auth: "owner", summary: "Register this phone or browser for notifications." },
   "device-remove": { method: "DELETE", path: "/v1/devices/{id}", auth: "owner", summary: "Stop notifications to a device." },
   "notification-test": { method: "POST", path: "/v1/notifications/test", auth: "owner", summary: "Send a test notification to every device." },
@@ -475,6 +505,7 @@ export interface EndpointTypes {
   "logout": { input: void; output: void };
   "me": { input: void; output: Me };
   "thread-view": { input: void; output: ThreadView };
+  "thread-read": { input: void; output: void };
   "thread-status": { input: ThreadStatusInput; output: void };
   "answer": { input: AnswerInput; output: ReplyOutput };
   "dismiss": { input: void; output: void };
@@ -484,8 +515,10 @@ export interface EndpointTypes {
   "machines": { input: void; output: MachineList };
   "machine-rename": { input: RenameMachineInput; output: void };
   "machine-remove": { input: void; output: void };
+  "sessions": { input: void; output: SessionList };
   "session-revoke": { input: void; output: void };
   "push-config": { input: void; output: PushConfig };
+  "devices": { input: void; output: DeviceList };
   "device-register": { input: DeviceInput; output: DeviceOutput };
   "device-remove": { input: void; output: void };
   "notification-test": { input: void; output: void };

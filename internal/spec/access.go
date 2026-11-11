@@ -91,6 +91,22 @@ type MachineList struct {
 	Machines []Machine `json:"machines"`
 }
 
+// Session is a live agent session, for the owner's machines page.
+type Session struct {
+	ID         string `json:"id"`
+	MachineID  string `json:"machine_id"`
+	Machine    string `json:"machine"`
+	Agent      string `json:"agent"`
+	Cwd        string `json:"cwd,omitempty"`
+	Repo       string `json:"repo,omitempty"`
+	CreatedAt  int64  `json:"created_at"`
+	LastUsedAt int64  `json:"last_used_at"`
+}
+
+type SessionList struct {
+	Sessions []Session `json:"sessions"`
+}
+
 type RenameMachineInput struct {
 	Name string `json:"name"`
 }

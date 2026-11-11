@@ -335,6 +335,20 @@ func (r *repo) UpdateAgentSession(ctx context.Context, s *access.AgentSession) e
 		LastUsedAt: ms(s.LastUsedAt), RevokedAt: nullMS(s.RevokedAt)}), "update agent session")
 }
 
+func (r *repo) ListAgentSessions(ctx context.Context, owner kernel.OwnerID) ([]access.SessionRow, error) {
+	rows, err := r.q.ListAgentSessions(ctx, string(owner))
+	if err != nil {
+		return nil, wrap(err, "list agent sessions")
+	}
+	out := make([]access.SessionRow, 0, len(rows))
+	for _, x := range rows {
+		s := toSession(db.AgentSession{ID: x.ID, OwnerID: x.OwnerID, MachineID: x.MachineID, Agent: x.Agent, ExternalID: x.ExternalID,
+			Cwd: x.Cwd, Repo: x.Repo, KeyHash: x.KeyHash, CreatedAt: x.CreatedAt, LastUsedAt: x.LastUsedAt, RevokedAt: x.RevokedAt})
+		out = append(out, access.SessionRow{AgentSession: *s, MachineName: x.MachineName})
+	}
+	return out, nil
+}
+
 // ---- events
 
 func (r *repo) AppendEvent(ctx context.Context, e *eventlog.Event) error {
@@ -379,19 +393,19 @@ func (r *repo) DeleteEventsBefore(ctx context.Context, before time.Time) (int64,
 
 func toThread(t db.Thread) *review.Thread {
 	return &review.Thread{ID: t.ID, Owner: kernel.OwnerID(t.OwnerID), SessionID: t.SessionID, MachineID: t.MachineID,
-		Title: t.Title, Status: t.Status, NextSeq: int(t.NextSeq), CreatedAt: tm(t.CreatedAt), UpdatedAt: tm(t.UpdatedAt)}
+		Title: t.Title, Status: t.Status, NextSeq: int(t.NextSeq), CreatedAt: tm(t.CreatedAt), UpdatedAt: tm(t.UpdatedAt), ReadAt: tm(t.ReadAt)}
 }
 
 func toRow(r db.GetThreadRowRow) review.ThreadRow {
 	t := toThread(db.Thread{ID: r.ID, OwnerID: r.OwnerID, SessionID: r.SessionID, MachineID: r.MachineID, Title: r.Title,
-		Status: r.Status, NextSeq: r.NextSeq, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt})
+		Status: r.Status, NextSeq: r.NextSeq, CreatedAt: r.CreatedAt, UpdatedAt: r.UpdatedAt, ReadAt: r.ReadAt})
 	return review.ThreadRow{Thread: *t, MachineName: r.MachineName, Agent: r.Agent, Posts: int(r.PostCount), OpenQuestions: int(r.OpenQuestions)}
 }
 
 func (r *repo) CreateThread(ctx context.Context, t *review.Thread) error {
 	return wrap(r.q.CreateThread(ctx, db.CreateThreadParams{ID: t.ID, OwnerID: string(t.Owner), SessionID: t.SessionID,
 		MachineID: t.MachineID, Title: t.Title, Status: t.Status, NextSeq: int64(t.NextSeq), CreatedAt: ms(t.CreatedAt),
-		UpdatedAt: ms(t.UpdatedAt)}), "create thread")
+		UpdatedAt: ms(t.UpdatedAt), ReadAt: ms(t.ReadAt)}), "create thread")
 }
 
 func (r *repo) GetThread(ctx context.Context, owner kernel.OwnerID, id string) (*review.Thread, error) {
@@ -404,7 +418,7 @@ func (r *repo) GetThread(ctx context.Context, owner kernel.OwnerID, id string) (
 
 func (r *repo) UpdateThread(ctx context.Context, t *review.Thread) error {
 	return wrap(r.q.UpdateThread(ctx, db.UpdateThreadParams{ID: t.ID, SessionID: t.SessionID, Title: t.Title, Status: t.Status,
-		NextSeq: int64(t.NextSeq), UpdatedAt: ms(t.UpdatedAt)}), "update thread")
+		NextSeq: int64(t.NextSeq), UpdatedAt: ms(t.UpdatedAt), ReadAt: ms(t.ReadAt)}), "update thread")
 }
 
 func (r *repo) LatestOpenThread(ctx context.Context, owner kernel.OwnerID, sessionID string) (*review.Thread, error) {

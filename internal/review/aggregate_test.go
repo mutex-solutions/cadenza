@@ -62,6 +62,29 @@ func TestThreadLifecycle(t *testing.T) {
 	}
 }
 
+func TestThreadUnread(t *testing.T) {
+	th := NewThread(actor("s_1"), "x", t0)
+	if !th.Unread() {
+		t.Fatal("a new thread is unread")
+	}
+	th.MarkRead(t0)
+	if th.Unread() {
+		t.Fatal("read thread")
+	}
+	th.AddPost(t0.Add(time.Minute))
+	if !th.Unread() {
+		t.Fatal("a new post makes it unread")
+	}
+	th.ApplyVerdict(spec.VerdictApprove, t0.Add(2*time.Minute))
+	if th.Unread() {
+		t.Fatal("the owner's own verdict is not news")
+	}
+	th.SetStatus(spec.ThreadArchived, t0.Add(3*time.Minute))
+	if th.Unread() {
+		t.Fatal("the owner's own status change is not news")
+	}
+}
+
 func TestThreadVisibilityAndAdoption(t *testing.T) {
 	th := NewThread(actor("s_1"), "x", t0)
 	other := actor("s_2")

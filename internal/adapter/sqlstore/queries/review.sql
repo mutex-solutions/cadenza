@@ -1,14 +1,14 @@
 -- name: CreateThread :exec
-INSERT INTO threads (id, owner_id, session_id, machine_id, title, status, next_seq, created_at, updated_at)
+INSERT INTO threads (id, owner_id, session_id, machine_id, title, status, next_seq, created_at, updated_at, read_at)
 VALUES (sqlc.arg(id), sqlc.arg(owner_id), sqlc.arg(session_id), sqlc.arg(machine_id), sqlc.arg(title), sqlc.arg(status),
-  sqlc.arg(next_seq), sqlc.arg(created_at), sqlc.arg(updated_at));
+  sqlc.arg(next_seq), sqlc.arg(created_at), sqlc.arg(updated_at), sqlc.arg(read_at));
 
 -- name: GetThread :one
 SELECT * FROM threads WHERE owner_id = sqlc.arg(owner_id) AND id = sqlc.arg(id);
 
 -- name: UpdateThread :exec
 UPDATE threads SET session_id = sqlc.arg(session_id), title = sqlc.arg(title), status = sqlc.arg(status),
-  next_seq = sqlc.arg(next_seq), updated_at = sqlc.arg(updated_at)
+  next_seq = sqlc.arg(next_seq), updated_at = sqlc.arg(updated_at), read_at = sqlc.arg(read_at)
 WHERE id = sqlc.arg(id);
 
 -- name: LatestOpenThread :one
@@ -17,7 +17,7 @@ WHERE owner_id = sqlc.arg(owner_id) AND session_id = sqlc.arg(session_id) AND st
 ORDER BY updated_at DESC LIMIT 1;
 
 -- name: GetThreadRow :one
-SELECT t.id, t.owner_id, t.session_id, t.machine_id, t.title, t.status, t.next_seq, t.created_at, t.updated_at,
+SELECT t.id, t.owner_id, t.session_id, t.machine_id, t.title, t.status, t.next_seq, t.created_at, t.updated_at, t.read_at,
   COALESCE(m.name, '') AS machine_name, COALESCE(s.agent, '') AS agent,
   (SELECT COUNT(*) FROM posts p WHERE p.thread_id = t.id) AS post_count,
   (SELECT COUNT(*) FROM questions q WHERE q.thread_id = t.id AND q.status = 'open') AS open_questions
@@ -27,7 +27,7 @@ LEFT JOIN agent_sessions s ON s.id = t.session_id
 WHERE t.owner_id = sqlc.arg(owner_id) AND t.id = sqlc.arg(id);
 
 -- name: ListThreadsAll :many
-SELECT t.id, t.owner_id, t.session_id, t.machine_id, t.title, t.status, t.next_seq, t.created_at, t.updated_at,
+SELECT t.id, t.owner_id, t.session_id, t.machine_id, t.title, t.status, t.next_seq, t.created_at, t.updated_at, t.read_at,
   COALESCE(m.name, '') AS machine_name, COALESCE(s.agent, '') AS agent,
   (SELECT COUNT(*) FROM posts p WHERE p.thread_id = t.id) AS post_count,
   (SELECT COUNT(*) FROM questions q WHERE q.thread_id = t.id AND q.status = 'open') AS open_questions
@@ -39,7 +39,7 @@ ORDER BY t.updated_at DESC
 LIMIT CAST(sqlc.arg(row_limit) AS BIGINT);
 
 -- name: ListThreadsOpen :many
-SELECT t.id, t.owner_id, t.session_id, t.machine_id, t.title, t.status, t.next_seq, t.created_at, t.updated_at,
+SELECT t.id, t.owner_id, t.session_id, t.machine_id, t.title, t.status, t.next_seq, t.created_at, t.updated_at, t.read_at,
   COALESCE(m.name, '') AS machine_name, COALESCE(s.agent, '') AS agent,
   (SELECT COUNT(*) FROM posts p WHERE p.thread_id = t.id) AS post_count,
   (SELECT COUNT(*) FROM questions q WHERE q.thread_id = t.id AND q.status = 'open') AS open_questions
@@ -51,7 +51,7 @@ ORDER BY t.updated_at DESC
 LIMIT CAST(sqlc.arg(row_limit) AS BIGINT);
 
 -- name: ListThreadsOpenOnMachine :many
-SELECT t.id, t.owner_id, t.session_id, t.machine_id, t.title, t.status, t.next_seq, t.created_at, t.updated_at,
+SELECT t.id, t.owner_id, t.session_id, t.machine_id, t.title, t.status, t.next_seq, t.created_at, t.updated_at, t.read_at,
   COALESCE(m.name, '') AS machine_name, COALESCE(s.agent, '') AS agent,
   (SELECT COUNT(*) FROM posts p WHERE p.thread_id = t.id) AS post_count,
   (SELECT COUNT(*) FROM questions q WHERE q.thread_id = t.id AND q.status = 'open') AS open_questions

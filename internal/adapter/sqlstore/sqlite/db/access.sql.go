@@ -336,6 +336,65 @@ func (q *Queries) GetWebSession(ctx context.Context, tokenHash string) (WebSessi
 	return i, err
 }
 
+const listAgentSessions = `-- name: ListAgentSessions :many
+SELECT s.id, s.owner_id, s.machine_id, s.agent, s.external_id, s.cwd, s.repo, s.key_hash, s.created_at, s.last_used_at, s.revoked_at,
+  m.name AS machine_name
+FROM agent_sessions s JOIN machines m ON m.id = s.machine_id
+WHERE s.owner_id = ?1 AND s.revoked_at IS NULL AND m.removed_at IS NULL
+ORDER BY s.last_used_at DESC
+`
+
+type ListAgentSessionsRow struct {
+	ID          string
+	OwnerID     string
+	MachineID   string
+	Agent       string
+	ExternalID  string
+	Cwd         string
+	Repo        string
+	KeyHash     string
+	CreatedAt   int64
+	LastUsedAt  int64
+	RevokedAt   sql.NullInt64
+	MachineName string
+}
+
+func (q *Queries) ListAgentSessions(ctx context.Context, ownerID string) ([]ListAgentSessionsRow, error) {
+	rows, err := q.db.QueryContext(ctx, listAgentSessions, ownerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListAgentSessionsRow{}
+	for rows.Next() {
+		var i ListAgentSessionsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.OwnerID,
+			&i.MachineID,
+			&i.Agent,
+			&i.ExternalID,
+			&i.Cwd,
+			&i.Repo,
+			&i.KeyHash,
+			&i.CreatedAt,
+			&i.LastUsedAt,
+			&i.RevokedAt,
+			&i.MachineName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listMachines = `-- name: ListMachines :many
 SELECT m.id, m.owner_id, m.name, m.key_hash, m.created_at, m.last_seen_at, m.removed_at,
   (SELECT COUNT(*) FROM agent_sessions s WHERE s.machine_id = m.id AND s.revoked_at IS NULL) AS session_count

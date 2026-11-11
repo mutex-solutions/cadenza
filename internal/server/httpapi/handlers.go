@@ -216,6 +216,23 @@ func (a *API) handlers() map[string]handler {
 			}
 			return ok(w, out)
 		},
+		"thread-read": func(w http.ResponseWriter, r *http.Request, p *access.Principal) error {
+			return done(w, a.d.Review.MarkRead(r.Context(), p.Owner, r.PathValue("id")))
+		},
+		"sessions": func(w http.ResponseWriter, r *http.Request, p *access.Principal) error {
+			out, err := a.d.Access.Sessions(r.Context(), p.Owner)
+			if err != nil {
+				return err
+			}
+			return ok(w, out)
+		},
+		"devices": func(w http.ResponseWriter, r *http.Request, p *access.Principal) error {
+			out, err := a.d.Notify.Devices(r.Context(), p.Owner)
+			if err != nil {
+				return err
+			}
+			return ok(w, out)
+		},
 		"thread-status": func(w http.ResponseWriter, r *http.Request, p *access.Principal) error {
 			var in spec.ThreadStatusInput
 			if err := decode(r, &in); err != nil {

@@ -347,6 +347,32 @@ func TestVerdictsCommentsAndAgentReply(t *testing.T) {
 	}
 }
 
+func TestMarkRead(t *testing.T) {
+	f := setup(t)
+	show, _ := f.Review.Show(ctx, f.a, spec.ShowInput{Title: "x", RetryID: "r1", Attachments: []spec.Attachment{f.uiChange(t)}})
+	inbox, _ := f.Review.Inbox(ctx, f.owner, false)
+	if !inbox.Threads[0].Unread {
+		t.Fatal("new thread must be unread")
+	}
+	f.Clock.Advance(time.Second)
+	if err := f.Review.MarkRead(ctx, f.owner, show.ThreadID); err != nil {
+		t.Fatal(err)
+	}
+	inbox, _ = f.Review.Inbox(ctx, f.owner, false)
+	if inbox.Threads[0].Unread {
+		t.Fatal("marked read")
+	}
+	f.Clock.Advance(time.Second)
+	f.Review.Ask(ctx, f.a, spec.AskInput{Text: "q?", RetryID: "q1"})
+	inbox, _ = f.Review.Inbox(ctx, f.owner, false)
+	if !inbox.Threads[0].Unread {
+		t.Fatal("a new question makes it unread again")
+	}
+	if err := f.Review.MarkRead(ctx, f.owner, "t_missing"); !kernel.Is(err, kernel.KindNotFound) {
+		t.Fatal("unknown thread")
+	}
+}
+
 func TestDescribe(t *testing.T) {
 	f := setup(t)
 	show, _ := f.Review.Show(ctx, f.a, spec.ShowInput{Title: "Checkout redesign", RetryID: "r1", Attachments: []spec.Attachment{f.uiChange(t)}})

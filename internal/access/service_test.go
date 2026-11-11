@@ -180,6 +180,23 @@ func TestSessionKeys(t *testing.T) {
 	}
 }
 
+func TestSessionsList(t *testing.T) {
+	e := testkit.New(t)
+	owner, _ := e.Owner(t)
+	mk := e.Machine(t, "vm-03")
+	e.Session(t, mk, "a")
+	e.Clock.Advance(time.Minute)
+	_, b := e.Session(t, mk, "b")
+	list, err := e.Access.Sessions(ctx, owner)
+	if err != nil || len(list.Sessions) != 2 || list.Sessions[0].ID != b.SessionID || list.Sessions[0].Machine != "vm-03" {
+		t.Fatalf("sessions: %+v %v", list, err)
+	}
+	e.Access.RevokeSession(ctx, owner, b.SessionID)
+	if list, _ = e.Access.Sessions(ctx, owner); len(list.Sessions) != 1 {
+		t.Fatal("revoked sessions are not listed")
+	}
+}
+
 func TestRenameAndRemoveMachine(t *testing.T) {
 	e := testkit.New(t)
 	owner, _ := e.Owner(t)

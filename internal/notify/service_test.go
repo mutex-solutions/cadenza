@@ -77,6 +77,18 @@ func TestRegisterValidatesAndUpserts(t *testing.T) {
 	}
 }
 
+func TestDevicesList(t *testing.T) {
+	e, owner, _ := setup(t)
+	list, err := e.Notify.Devices(ctx, owner)
+	if err != nil || len(list.Devices) != 1 || list.Devices[0].Name != "Laptop" || list.Devices[0].Provider != "webpush" {
+		t.Fatalf("devices %+v %v", list, err)
+	}
+	e.Notify.Remove(ctx, owner, list.Devices[0].ID)
+	if list, _ = e.Notify.Devices(ctx, owner); len(list.Devices) != 0 {
+		t.Fatal("removed devices are not listed")
+	}
+}
+
 func TestConfig(t *testing.T) {
 	e, _, _ := setup(t)
 	c := e.Notify.Config()

@@ -193,6 +193,19 @@ func (s *Service) AddReply(ctx context.Context, owner kernel.OwnerID, in spec.Re
 	return out, err
 }
 
+// MarkRead marks a thread read by the owner. It records no event: other
+// devices learn of it on their next reload.
+func (s *Service) MarkRead(ctx context.Context, owner kernel.OwnerID, id string) error {
+	return s.store.InTx(ctx, func(r Repo) error {
+		t, err := r.GetThread(ctx, owner, id)
+		if err != nil {
+			return err
+		}
+		t.MarkRead(s.clock.Now())
+		return r.UpdateThread(ctx, t)
+	})
+}
+
 // SetThreadStatus approves, archives or reopens a thread.
 func (s *Service) SetThreadStatus(ctx context.Context, owner kernel.OwnerID, id, status string) error {
 	now := s.clock.Now()

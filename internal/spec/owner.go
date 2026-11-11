@@ -118,6 +118,19 @@ type DeviceOutput struct {
 	DeviceID string `json:"device_id"`
 }
 
+// Device is a registered phone or browser, without its token.
+type Device struct {
+	ID        string `json:"id"`
+	Provider  string `json:"provider"`
+	Name      string `json:"name"`
+	CreatedAt int64  `json:"created_at"`
+	LastOKAt  int64  `json:"last_ok_at"`
+}
+
+type DeviceList struct {
+	Devices []Device `json:"devices"`
+}
+
 type PushConfig struct {
 	Providers      []string `json:"providers"`
 	VAPIDPublicKey string   `json:"vapid_public_key,omitempty"`

@@ -210,9 +210,9 @@ func (q *Queries) CreateReply(ctx context.Context, arg CreateReplyParams) error 
 }
 
 const createThread = `-- name: CreateThread :exec
-INSERT INTO threads (id, owner_id, session_id, machine_id, title, status, next_seq, created_at, updated_at)
+INSERT INTO threads (id, owner_id, session_id, machine_id, title, status, next_seq, created_at, updated_at, read_at)
 VALUES (?1, ?2, ?3, ?4, ?5, ?6,
-  ?7, ?8, ?9)
+  ?7, ?8, ?9, ?10)
 `
 
 type CreateThreadParams struct {
@@ -225,6 +225,7 @@ type CreateThreadParams struct {
 	NextSeq   int64
 	CreatedAt int64
 	UpdatedAt int64
+	ReadAt    int64
 }
 
 func (q *Queries) CreateThread(ctx context.Context, arg CreateThreadParams) error {
@@ -238,6 +239,7 @@ func (q *Queries) CreateThread(ctx context.Context, arg CreateThreadParams) erro
 		arg.NextSeq,
 		arg.CreatedAt,
 		arg.UpdatedAt,
+		arg.ReadAt,
 	)
 	return err
 }
@@ -409,7 +411,7 @@ func (q *Queries) GetReply(ctx context.Context, arg GetReplyParams) (Reply, erro
 }
 
 const getThread = `-- name: GetThread :one
-SELECT id, owner_id, session_id, machine_id, title, status, next_seq, created_at, updated_at FROM threads WHERE owner_id = ?1 AND id = ?2
+SELECT id, owner_id, session_id, machine_id, title, status, next_seq, created_at, updated_at, read_at FROM threads WHERE owner_id = ?1 AND id = ?2
 `
 
 type GetThreadParams struct {
@@ -430,12 +432,13 @@ func (q *Queries) GetThread(ctx context.Context, arg GetThreadParams) (Thread, e
 		&i.NextSeq,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ReadAt,
 	)
 	return i, err
 }
 
 const getThreadRow = `-- name: GetThreadRow :one
-SELECT t.id, t.owner_id, t.session_id, t.machine_id, t.title, t.status, t.next_seq, t.created_at, t.updated_at,
+SELECT t.id, t.owner_id, t.session_id, t.machine_id, t.title, t.status, t.next_seq, t.created_at, t.updated_at, t.read_at,
   COALESCE(m.name, '') AS machine_name, COALESCE(s.agent, '') AS agent,
   (SELECT COUNT(*) FROM posts p WHERE p.thread_id = t.id) AS post_count,
   (SELECT COUNT(*) FROM questions q WHERE q.thread_id = t.id AND q.status = 'open') AS open_questions
@@ -460,6 +463,7 @@ type GetThreadRowRow struct {
 	NextSeq       int64
 	CreatedAt     int64
 	UpdatedAt     int64
+	ReadAt        int64
 	MachineName   string
 	Agent         string
 	PostCount     int64
@@ -479,6 +483,7 @@ func (q *Queries) GetThreadRow(ctx context.Context, arg GetThreadRowParams) (Get
 		&i.NextSeq,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ReadAt,
 		&i.MachineName,
 		&i.Agent,
 		&i.PostCount,
@@ -488,7 +493,7 @@ func (q *Queries) GetThreadRow(ctx context.Context, arg GetThreadRowParams) (Get
 }
 
 const latestOpenThread = `-- name: LatestOpenThread :one
-SELECT id, owner_id, session_id, machine_id, title, status, next_seq, created_at, updated_at FROM threads
+SELECT id, owner_id, session_id, machine_id, title, status, next_seq, created_at, updated_at, read_at FROM threads
 WHERE owner_id = ?1 AND session_id = ?2 AND status <> 'archived'
 ORDER BY updated_at DESC LIMIT 1
 `
@@ -511,6 +516,7 @@ func (q *Queries) LatestOpenThread(ctx context.Context, arg LatestOpenThreadPara
 		&i.NextSeq,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ReadAt,
 	)
 	return i, err
 }
@@ -735,7 +741,7 @@ func (q *Queries) ListThreadAttachments(ctx context.Context, arg ListThreadAttac
 }
 
 const listThreadsAll = `-- name: ListThreadsAll :many
-SELECT t.id, t.owner_id, t.session_id, t.machine_id, t.title, t.status, t.next_seq, t.created_at, t.updated_at,
+SELECT t.id, t.owner_id, t.session_id, t.machine_id, t.title, t.status, t.next_seq, t.created_at, t.updated_at, t.read_at,
   COALESCE(m.name, '') AS machine_name, COALESCE(s.agent, '') AS agent,
   (SELECT COUNT(*) FROM posts p WHERE p.thread_id = t.id) AS post_count,
   (SELECT COUNT(*) FROM questions q WHERE q.thread_id = t.id AND q.status = 'open') AS open_questions
@@ -762,6 +768,7 @@ type ListThreadsAllRow struct {
 	NextSeq       int64
 	CreatedAt     int64
 	UpdatedAt     int64
+	ReadAt        int64
 	MachineName   string
 	Agent         string
 	PostCount     int64
@@ -787,6 +794,7 @@ func (q *Queries) ListThreadsAll(ctx context.Context, arg ListThreadsAllParams) 
 			&i.NextSeq,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ReadAt,
 			&i.MachineName,
 			&i.Agent,
 			&i.PostCount,
@@ -806,7 +814,7 @@ func (q *Queries) ListThreadsAll(ctx context.Context, arg ListThreadsAllParams) 
 }
 
 const listThreadsOpen = `-- name: ListThreadsOpen :many
-SELECT t.id, t.owner_id, t.session_id, t.machine_id, t.title, t.status, t.next_seq, t.created_at, t.updated_at,
+SELECT t.id, t.owner_id, t.session_id, t.machine_id, t.title, t.status, t.next_seq, t.created_at, t.updated_at, t.read_at,
   COALESCE(m.name, '') AS machine_name, COALESCE(s.agent, '') AS agent,
   (SELECT COUNT(*) FROM posts p WHERE p.thread_id = t.id) AS post_count,
   (SELECT COUNT(*) FROM questions q WHERE q.thread_id = t.id AND q.status = 'open') AS open_questions
@@ -833,6 +841,7 @@ type ListThreadsOpenRow struct {
 	NextSeq       int64
 	CreatedAt     int64
 	UpdatedAt     int64
+	ReadAt        int64
 	MachineName   string
 	Agent         string
 	PostCount     int64
@@ -858,6 +867,7 @@ func (q *Queries) ListThreadsOpen(ctx context.Context, arg ListThreadsOpenParams
 			&i.NextSeq,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ReadAt,
 			&i.MachineName,
 			&i.Agent,
 			&i.PostCount,
@@ -877,7 +887,7 @@ func (q *Queries) ListThreadsOpen(ctx context.Context, arg ListThreadsOpenParams
 }
 
 const listThreadsOpenOnMachine = `-- name: ListThreadsOpenOnMachine :many
-SELECT t.id, t.owner_id, t.session_id, t.machine_id, t.title, t.status, t.next_seq, t.created_at, t.updated_at,
+SELECT t.id, t.owner_id, t.session_id, t.machine_id, t.title, t.status, t.next_seq, t.created_at, t.updated_at, t.read_at,
   COALESCE(m.name, '') AS machine_name, COALESCE(s.agent, '') AS agent,
   (SELECT COUNT(*) FROM posts p WHERE p.thread_id = t.id) AS post_count,
   (SELECT COUNT(*) FROM questions q WHERE q.thread_id = t.id AND q.status = 'open') AS open_questions
@@ -905,6 +915,7 @@ type ListThreadsOpenOnMachineRow struct {
 	NextSeq       int64
 	CreatedAt     int64
 	UpdatedAt     int64
+	ReadAt        int64
 	MachineName   string
 	Agent         string
 	PostCount     int64
@@ -930,6 +941,7 @@ func (q *Queries) ListThreadsOpenOnMachine(ctx context.Context, arg ListThreadsO
 			&i.NextSeq,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ReadAt,
 			&i.MachineName,
 			&i.Agent,
 			&i.PostCount,
@@ -1112,8 +1124,8 @@ func (q *Queries) UpdateReply(ctx context.Context, arg UpdateReplyParams) error 
 
 const updateThread = `-- name: UpdateThread :exec
 UPDATE threads SET session_id = ?1, title = ?2, status = ?3,
-  next_seq = ?4, updated_at = ?5
-WHERE id = ?6
+  next_seq = ?4, updated_at = ?5, read_at = ?6
+WHERE id = ?7
 `
 
 type UpdateThreadParams struct {
@@ -1122,6 +1134,7 @@ type UpdateThreadParams struct {
 	Status    string
 	NextSeq   int64
 	UpdatedAt int64
+	ReadAt    int64
 	ID        string
 }
 
@@ -1132,6 +1145,7 @@ func (q *Queries) UpdateThread(ctx context.Context, arg UpdateThreadParams) erro
 		arg.Status,
 		arg.NextSeq,
 		arg.UpdatedAt,
+		arg.ReadAt,
 		arg.ID,
 	)
 	return err

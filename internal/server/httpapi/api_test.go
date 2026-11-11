@@ -219,6 +219,16 @@ func TestPairingOverHTTP(t *testing.T) {
 	}
 	id := machines.Machines[0].ID
 	h.mustCall(t, "POST", "/v1/machines/"+id+"/rename", owner, spec.RenameMachineInput{Name: "box"}, nil)
+	var sessions spec.SessionList
+	h.mustCall(t, "GET", "/v1/sessions", owner, nil, &sessions)
+	if len(sessions.Sessions) != 1 || sessions.Sessions[0].ID != sess.SessionID {
+		t.Fatalf("sessions %+v", sessions)
+	}
+	var devices spec.DeviceList
+	h.mustCall(t, "GET", "/v1/devices", owner, nil, &devices)
+	if devices.Devices == nil {
+		t.Fatal("devices must be a list")
+	}
 	h.mustCall(t, "DELETE", "/v1/sessions/"+sess.SessionID, owner, nil, nil)
 	if code, _ := h.call(t, "GET", "/v1/responses", sess.SessionKey, nil, nil); code != 401 {
 		t.Fatal("revoked session works")
@@ -315,8 +325,12 @@ func TestShowAskWaitAnswerFlow(t *testing.T) {
 	if len(view.Posts) != 1 || len(view.Questions) != 1 || len(view.Replies) != 1 || !view.Replies[0].Delivered {
 		t.Fatalf("thread view %+v", view)
 	}
+	h.mustCall(t, "POST", "/v1/threads/"+show.ThreadID+"/read", owner, nil, nil)
 	var inbox spec.ThreadList
 	h.mustCall(t, "GET", "/v1/threads", owner, nil, &inbox)
+	if inbox.Threads[0].Unread {
+		t.Fatal("thread-read did not mark the thread read")
+	}
 	var agentList spec.ThreadList
 	h.mustCall(t, "GET", "/v1/threads", sk, nil, &agentList)
 	if len(inbox.Threads) != 1 || len(agentList.Threads) != 1 {

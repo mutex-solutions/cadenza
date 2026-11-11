@@ -72,3 +72,10 @@ VALUES (sqlc.arg(id), sqlc.arg(owner_id), sqlc.arg(machine_id), sqlc.arg(agent),
 UPDATE agent_sessions SET cwd = sqlc.arg(cwd), repo = sqlc.arg(repo), key_hash = sqlc.arg(key_hash),
   last_used_at = sqlc.arg(last_used_at), revoked_at = sqlc.narg(revoked_at)
 WHERE id = sqlc.arg(id);
+
+-- name: ListAgentSessions :many
+SELECT s.id, s.owner_id, s.machine_id, s.agent, s.external_id, s.cwd, s.repo, s.key_hash, s.created_at, s.last_used_at, s.revoked_at,
+  m.name AS machine_name
+FROM agent_sessions s JOIN machines m ON m.id = s.machine_id
+WHERE s.owner_id = sqlc.arg(owner_id) AND s.revoked_at IS NULL AND m.removed_at IS NULL
+ORDER BY s.last_used_at DESC;
