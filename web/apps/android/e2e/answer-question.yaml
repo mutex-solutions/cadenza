@@ -1,0 +1,35 @@
+# Maestro flow: the owner logs in, opens the agent's thread and answers its
+# question. Run by scripts/android-e2e.sh, which starts a real Cadenza server,
+# has the real CLI show work and ask, and checks the agent's `cadenza wait`
+# receives the answer. Inputs: SERVER_URL, PASSWORD, THREAD_TITLE, QUESTION, CHOICE.
+appId: dev.cadenza.app
+---
+- launchApp:
+    clearState: true
+- tapOn:
+    id: "server-url"
+- inputText: ${SERVER_URL}
+- tapOn:
+    id: "password"
+- inputText: ${PASSWORD}
+- hideKeyboard
+- tapOn:
+    id: "login"
+# The inbox lists the thread the agent started.
+- extendedWaitUntil:
+    visible: ${THREAD_TITLE}
+    timeout: 30000
+- tapOn: ${THREAD_TITLE}
+# The post renders (the viewer runs in a WebView).
+- extendedWaitUntil:
+    visible:
+      id: "reply-bar"
+    timeout: 30000
+- tapOn:
+    id: "reply-bar"
+- assertVisible: ${QUESTION}
+- tapOn: ${CHOICE}
+- tapOn: "Send answer"
+- extendedWaitUntil:
+    visible: "Answer: ${CHOICE}"
+    timeout: 20000
