@@ -90,6 +90,11 @@ HALF_OPENED and OPENED (via `cmd device_state`) in portrait and landscape keep t
 thread open. That profile has a single display, so the switch to a separate cover screen was covered with size and
 density changes instead.
 
-Known gap: in the half-opened "book" posture the split between the two panes is not aligned with the hinge, so the
-thread pane can cross the fold. Aligning it needs the hinge position (Jetpack WindowManager's FoldingFeature) from a
-native module. Not covered at all without hardware: real performance and a real Galaxy Z Fold's two displays.
+In the half-opened "book" posture the two panes split exactly on the hinge: `modules/cadenza-fold` is a small
+local Expo module that reports the fold from Jetpack WindowManager (`FoldingFeature`), and `src/lib/fold.ts`
+places the split there (and leaves a physical hinge gap empty). That also gives two panes on an inner screen
+narrower than the usual 700 dp. Lying flat, the width rules apply; held sideways (tabletop, horizontal hinge) the
+fold is ignored. Checked on the emulator's 7.6" foldable: book posture split at 884 px on a 1768 px screen (the
+hinge), back to one pane when flat, thread kept open throughout.
+
+Not covered at all without hardware: real performance and a real Galaxy Z Fold's two displays.

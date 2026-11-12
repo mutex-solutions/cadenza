@@ -1,0 +1,17 @@
+// Local Expo module: reports the hinge of a foldable through Jetpack
+// WindowManager. Autolinked from web/apps/android/modules.
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+apply plugin: 'expo-module-gradle-plugin'
+
+group = 'dev.cadenza.fold'
+version = '0.1.0'
+
+android {
+  namespace "dev.cadenza.fold"
+}
+
+dependencies {
+  implementation 'androidx.window:window:1.4.0'
+  implementation 'androidx.window:window-java:1.4.0'
+}

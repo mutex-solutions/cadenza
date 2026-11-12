@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
-import { AppState, BackHandler, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { AppState, BackHandler, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { SyncEngine, createClient, memoryStorage } from "@cadenza/core";
 import { AppContext, type AppContextValue } from "./src/context";
 import { FileUrlCache } from "./src/lib/fileUrls";
-import { layoutFor } from "./src/lib/layout";
 import { navReducer, threadFromNotification } from "./src/lib/nav";
 import { createSessionStore, type Session } from "./src/lib/session";
 import { disableNotifications, onNotificationTap } from "./src/native/notifications";
 import { secureStore } from "./src/native/secureStore";
+import { Panes } from "./src/components/Panes";
 import { ConnectScreen } from "./src/screens/Connect";
 import { InboxScreen } from "./src/screens/Inbox";
 import { SettingsScreen } from "./src/screens/Settings";
@@ -20,10 +20,6 @@ const sessionStore = createSessionStore(secureStore);
 
 export default function App() {
   const { colors, scheme } = useTheme();
-  // Re-renders on rotation and fold/unfold; the activity is never restarted
-  // (configChanges in the manifest), so all state below survives.
-  const { width } = useWindowDimensions();
-  const layout = layoutFor(width);
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [stack, nav] = useReducer(navReducer, [{ name: "inbox" }]);
 
@@ -95,27 +91,26 @@ export default function App() {
   if (session === null) screen = <ConnectScreen session={sessionStore} onConnected={setSession} />;
   else if (value) {
     if (top.name === "settings") screen = <SettingsScreen />;
-    else if (layout.twoPane) {
-      // Tablets and a foldable's inner screen: the inbox and the open thread side by side.
+    else {
+      // Tablets and foldables: the inbox and the open thread side by side
+      // (on the hinge when a foldable is half-opened); phones: one at a time.
       const open = top.name === "thread" ? top.id : null;
       screen = (
-        <View style={styles.row}>
-          <View style={[styles.list, { width: layout.listWidth, borderRightColor: colors.line }]}>
-            <InboxScreen selectedId={open} />
-          </View>
-          <View style={styles.detail}>
-            {open ? (
+        <Panes
+          list={<InboxScreen selectedId={open} />}
+          detail={
+            open ? (
               <ThreadScreen key={open} id={open} embedded />
             ) : (
               <View style={styles.empty}>
                 <Text style={{ color: colors.muted, fontSize: 16, textAlign: "center" }}>Pick a thread to see the work and answer questions.</Text>
               </View>
-            )}
-          </View>
-        </View>
+            )
+          }
+          single={open ? <ThreadScreen key={open} id={open} /> : <InboxScreen selectedId={null} />}
+        />
       );
-    } else if (top.name === "thread") screen = <ThreadScreen key={top.id} id={top.id} />;
-    else screen = <InboxScreen selectedId={null} />;
+    }
   }
 
   return (
@@ -129,8 +124,5 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  row: { flex: 1, flexDirection: "row" },
-  list: { borderRightWidth: StyleSheet.hairlineWidth },
-  detail: { flex: 1 },
   empty: { flex: 1, alignItems: "center", justifyContent: "center", padding: 32 },
 });

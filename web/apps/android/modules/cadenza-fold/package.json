@@ -1,0 +1,8 @@
+{
+  "name": "cadenza-fold",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Reports a foldable's hinge (Jetpack WindowManager FoldingFeature) to JavaScript.",
+  "main": "index.ts",
+  "license": "Apache-2.0"
+}

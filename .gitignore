@@ -43,3 +43,4 @@ Thumbs.db
 # Built web app, copied in by `make web`
 /internal/server/webapp/dist/*
 !/internal/server/webapp/dist/.gitkeep
+/web/apps/android/modules/*/android/build/
