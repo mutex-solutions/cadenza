@@ -38,7 +38,8 @@
         }
       ],
       "./plugins/cleartext.js",
-      "./plugins/large-screens.js"
+      "./plugins/large-screens.js",
+      "./plugins/release-signing.js"
     ],
     "extra": {
       "eas": {

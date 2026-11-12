@@ -15,6 +15,7 @@
     "App.tsx",
     "src",
     "plugins",
-    "modules"
+    "modules",
+    "app.config.d.ts"
   ]
 }
