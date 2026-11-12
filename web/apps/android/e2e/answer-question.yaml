@@ -6,6 +6,11 @@ appId: dev.cadenza.app
 ---
 - launchApp:
     clearState: true
+# Cold start on a CI emulator can take a while: wait for the login screen.
+- extendedWaitUntil:
+    visible:
+      id: "server-url"
+    timeout: 60000
 - tapOn:
     id: "server-url"
 - inputText: ${SERVER_URL}
