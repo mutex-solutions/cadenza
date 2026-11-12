@@ -364,8 +364,48 @@ func (s *Service) Responses(ctx context.Context, a Actor) (spec.ResponsesOutput,
 // Ack marks responses up to cursor delivered. Acknowledging an older cursor
 // than the current one is a no-op.
 func (s *Service) Ack(ctx context.Context, a Actor, cursor int64) error {
+	return s.AckReplies(ctx, a, cursor, nil)
+}
+
+// AckReplies marks responses up to cursor delivered, and also the listed
+// replies (e.g. the answer `wait` returned, which `responses` would otherwise
+// repeat and the apps would show as not yet delivered).
+func (s *Service) AckReplies(ctx context.Context, a Actor, cursor int64, replyIDs []string) error {
+	if len(replyIDs) > 200 {
+		return kernel.Invalid("acknowledge at most 200 replies at once")
+	}
 	now := s.clock.Now()
 	return s.tx(ctx, func(r Repo, rec *recorder) error {
+		marked := 0
+		for _, id := range replyIDs {
+			rep, err := r.GetReply(ctx, a.Owner, id)
+			if err != nil {
+				return err
+			}
+			t, err := r.GetThread(ctx, a.Owner, rep.ThreadID)
+			if err != nil {
+				return err
+			}
+			if !t.VisibleTo(a) || rep.SessionID != a.SessionID {
+				return kernel.NotFound("reply %s is not for this session", id)
+			}
+			if rep.DeliveredAt != nil {
+				continue
+			}
+			rep.DeliveredAt = &now
+			if err := r.UpdateReply(ctx, rep); err != nil {
+				return err
+			}
+			marked++
+		}
+		if marked > 0 {
+			if _, err := rec.add(ctx, s.event(a, spec.EventReplyDelivered, "", "replies", now)); err != nil {
+				return err
+			}
+		}
+		if cursor <= 0 {
+			return nil
+		}
 		cur, err := r.GetCursor(ctx, a.SessionID)
 		if err != nil {
 			return err

@@ -79,7 +79,7 @@ func cmdWait(ctx context.Context, a *App, args []string) error {
 		switch out.Status {
 		case spec.QuestionAnswered:
 			if out.Answer != nil {
-				if err := a.saveResponseFiles(ctx, out.Answer); err != nil {
+				if err := c.deliverAnswer(ctx, out.Answer); err != nil {
 					return err
 				}
 			}
@@ -93,6 +93,15 @@ func cmdWait(ctx context.Context, a *App, args []string) error {
 			return a.exit(out, spec.ExitStillOpen)
 		}
 	}
+}
+
+// deliverAnswer saves the answer's files, then acknowledges it, so
+// `responses` does not repeat it and the apps show it as delivered.
+func (c *client) deliverAnswer(ctx context.Context, ans *spec.Response) error {
+	if err := c.a.saveResponseFiles(ctx, ans); err != nil {
+		return err
+	}
+	return c.call(ctx, "responses-ack", nil, nil, spec.AckInput{ReplyIDs: []string{ans.ID}}, nil)
 }
 
 // parseTimeout reads --timeout: a Go duration ("10m", "1h30m"), plain

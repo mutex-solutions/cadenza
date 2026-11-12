@@ -145,8 +145,12 @@ type ResponsesOutput struct {
 	Cursor int64 `json:"cursor"`
 }
 
+// AckInput acknowledges replies once the agent has them (files saved):
+// everything up to Cursor from `responses`, and/or specific replies, such as
+// the answer `wait` returned.
 type AckInput struct {
-	Cursor int64 `json:"cursor"`
+	Cursor   int64    `json:"cursor"`
+	ReplyIDs []string `json:"reply_ids,omitempty"`
 }
 
 type AgentReplyInput struct {

@@ -92,6 +92,10 @@ func (b *backend) Wait(ctx context.Context, id string, d time.Duration) (any, er
 	deadline := time.Now().Add(d)
 	for {
 		out, _, err := b.d.Review.QuestionState(ctx, b.actor(), id)
+		if err == nil && out.Answer != nil {
+			// A cloud agent gets files by signed link itself: delivered now.
+			err = b.d.Review.AckReplies(ctx, b.actor(), 0, []string{out.Answer.ID})
+		}
 		if err != nil || out.Status != spec.QuestionOpen || !time.Now().Before(deadline) {
 			return out, err
 		}
