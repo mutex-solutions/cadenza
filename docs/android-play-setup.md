@@ -18,8 +18,15 @@ Until the steps below are done the workflow skips itself, and releases keep ship
 ### 2. Create the app
 
 1. Play Console → **Create app**: name "Cadenza", app, free.
-2. Fill in the required "App content" forms (privacy policy URL, data safety, ads: none, content rating,
-   target audience). Internal testing needs most of these before the first release can roll out.
+2. Fill in the required "App content" forms. Internal testing needs most of these before the first release can
+   roll out:
+   - Privacy policy URL: <https://github.com/mutex-solutions/cadenza/blob/main/PRIVACY.md>
+   - Ads: no. App access: all features need a sign-in to your own server; give reviewers a test server address
+     and password if asked.
+   - Data safety: data is sent only to the user's own server. Collected: photos (optional, user-attached),
+     app interactions/messages (answers); not shared; encrypted in transit when the server uses HTTPS; deletion
+     on the server. No analytics, location, contacts or audio.
+   - Content rating questionnaire (category: utility/productivity) and target audience (18+).
 3. Decide the package name. The app uses **`dev.cadenza.app`** (`android.package` in `web/apps/android/app.json`).
    It is permanent on Play: if you change it, set `PLAY_PACKAGE_NAME` too.
 
@@ -40,11 +47,13 @@ Google Play only accepts API uploads after the app has one bundle uploaded in Pl
 
 ```sh
 cd web/apps/android
-CI=1 npx expo prebuild --platform android
+# the version is written into the native project by prebuild, so set it first
+export CADENZA_VERSION_NAME=0.1.5 CADENZA_VERSION_CODE=1000000
+CI=1 npx expo prebuild --platform android --clean
 cd android
 CADENZA_UPLOAD_STORE_FILE=/path/to/cadenza-upload.jks CADENZA_UPLOAD_STORE_PASSWORD=… \
 CADENZA_UPLOAD_KEY_ALIAS=upload CADENZA_UPLOAD_KEY_PASSWORD=… \
-CADENZA_VERSION_CODE=1000000 ./gradlew bundleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a,x86_64
+./gradlew bundleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a,x86_64
 ```
 
 Then Play Console → **Testing → Internal testing → Create new release**, accept **Play App Signing**, upload
