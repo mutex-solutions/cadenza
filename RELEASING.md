@@ -58,8 +58,11 @@ to the release, for installing on a phone with `adb install`. That APK is signed
 for your own devices, not for the Play Store. To attach an APK to an existing release, run the workflow by hand
 with the tag.
 
-For the Play Store, the Android app is built with EAS from `web/apps/android`; see its README. Google Play requires a yearly target
-SDK update: plan it into the yearly upgrade window with the other dependency updates.
+Each version tag also sends a build signed with your own upload key to testers, when the secrets are set:
+`.github/workflows/android-firebase.yml` through Firebase App Distribution (testers install from App Tester; see
+[docs/android-firebase-setup.md](docs/android-firebase-setup.md)) and `.github/workflows/android-play.yml` to a
+Google Play testing track (see [docs/android-play-setup.md](docs/android-play-setup.md)). Google Play requires a
+yearly target SDK update: plan it into the yearly upgrade window with the other dependency updates.
 
 ## Homebrew tap
 

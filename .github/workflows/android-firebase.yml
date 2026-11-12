@@ -1,0 +1,122 @@
+name: Android to Firebase App Distribution
+
+# Builds the Android APK signed with your own upload key and sends it to your
+# testers through Firebase App Distribution (they install it from the
+# "App Tester" app). Runs on version tags and by hand. Pull requests that touch
+# this workflow build and sign the APK but do not send it.
+# Needs the secrets listed in docs/android-firebase-setup.md; without them it
+# stops with a notice instead of failing.
+on:
+  push:
+    tags: ["v*"]
+  pull_request:
+    paths: [".github/workflows/android-firebase.yml"]
+  workflow_dispatch:
+    inputs:
+      release_notes:
+        description: "Release notes shown to testers (default: the version and last commit)"
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-firebase-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  FIREBASE_TOOLS_VERSION: "15.34.2"
+
+jobs:
+  apk:
+    name: Build, sign and distribute the APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      HAS_KEY: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 != '' }}
+      HAS_FIREBASE: ${{ secrets.FIREBASE_APP_ID != '' && secrets.FIREBASE_SERVICE_ACCOUNT_JSON != '' }}
+      DISTRIBUTE: ${{ github.event_name != 'pull_request' }}
+    steps:
+      - name: Check the secrets are set
+        run: |
+          if [ "$HAS_KEY" != "true" ]; then
+            echo "::notice::The upload key secrets are not set; skipping. See docs/android-firebase-setup.md."
+          elif [ "$DISTRIBUTE" = "true" ] && [ "$HAS_FIREBASE" != "true" ]; then
+            echo "::notice::Firebase secrets are not set; building only. See docs/android-firebase-setup.md."
+          fi
+
+      - uses: actions/checkout@v6
+        if: env.HAS_KEY == 'true'
+
+      - name: Version for this build
+        if: env.HAS_KEY == 'true'
+        run: |
+          # Same scheme as the other Android workflows: versionCode always grows.
+          code=$((1000000 + GITHUB_RUN_NUMBER))
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then name="${GITHUB_REF_NAME#v}"; else name="0.0.0-dev.${GITHUB_RUN_NUMBER}"; fi
+          echo "CADENZA_VERSION_CODE=$code" >> "$GITHUB_ENV"
+          echo "CADENZA_VERSION_NAME=$name" >> "$GITHUB_ENV"
+          echo "Building $name ($code)"
+
+      - uses: actions/setup-java@v5
+        if: env.HAS_KEY == 'true'
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: pnpm/action-setup@v5
+        if: env.HAS_KEY == 'true'
+        with:
+          package_json_file: web/package.json
+
+      - uses: actions/setup-node@v6
+        if: env.HAS_KEY == 'true'
+        with:
+          node-version-file: web/.nvmrc
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Decode the upload key
+        if: env.HAS_KEY == 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          echo "CADENZA_UPLOAD_STORE_FILE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+
+      - name: Build the signed APK (arm64)
+        if: env.HAS_KEY == 'true'
+        env:
+          CADENZA_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+          CADENZA_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          CADENZA_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+        run: |
+          cd web && pnpm install --frozen-lockfile
+          cd apps/android && CI=1 npx expo prebuild --platform android --no-install
+          cd android && ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a --no-daemon
+          apk=app/build/outputs/apk/release/app-release.apk
+          apksigner="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner"
+          signer=$("$apksigner" verify --print-certs "$apk" | grep "certificate DN" | head -1)
+          echo "$signer"
+          case "$signer" in
+            *"CN=Android Debug"*) echo "::error::The APK is signed with the debug key; check the ANDROID_UPLOAD_* secrets."; exit 1 ;;
+          esac
+          cp "$apk" "$GITHUB_WORKSPACE/cadenza-android-arm64.apk"
+
+      - name: Distribute to testers
+        if: env.HAS_KEY == 'true' && env.HAS_FIREBASE == 'true' && env.DISTRIBUTE == 'true'
+        env:
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          GROUPS: ${{ vars.FIREBASE_TESTER_GROUPS || 'testers' }}
+          NOTES_INPUT: ${{ inputs.release_notes }}
+        run: |
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/firebase.json"
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase.json"
+          notes="${NOTES_INPUT:-Cadenza $CADENZA_VERSION_NAME ($CADENZA_VERSION_CODE): $(git log -1 --format=%s)}"
+          npx --yes "firebase-tools@$FIREBASE_TOOLS_VERSION" appdistribution:distribute cadenza-android-arm64.apk \
+            --app "$FIREBASE_APP_ID" --groups "$GROUPS" --release-notes "$notes"
+
+      - name: Remove the keys
+        if: always()
+        run: rm -f "$RUNNER_TEMP/upload.jks" "$RUNNER_TEMP/firebase.json"
