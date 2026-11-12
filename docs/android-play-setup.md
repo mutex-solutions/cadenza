@@ -47,11 +47,13 @@ Google Play only accepts API uploads after the app has one bundle uploaded in Pl
 
 ```sh
 cd web/apps/android
-CI=1 npx expo prebuild --platform android
+# the version is written into the native project by prebuild, so set it first
+export CADENZA_VERSION_NAME=0.1.5 CADENZA_VERSION_CODE=1000000
+CI=1 npx expo prebuild --platform android --clean
 cd android
 CADENZA_UPLOAD_STORE_FILE=/path/to/cadenza-upload.jks CADENZA_UPLOAD_STORE_PASSWORD=… \
 CADENZA_UPLOAD_KEY_ALIAS=upload CADENZA_UPLOAD_KEY_PASSWORD=… \
-CADENZA_VERSION_CODE=1000000 ./gradlew bundleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a,x86_64
+./gradlew bundleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a,x86_64
 ```
 
 Then Play Console → **Testing → Internal testing → Create new release**, accept **Play App Signing**, upload
