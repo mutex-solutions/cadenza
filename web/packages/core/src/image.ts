@@ -4,6 +4,8 @@ export const MAX_IMAGE_SIDE = 2560;
 export const PREVIEW_SIDE = 640;
 /** WebP quality used for photos. */
 export const WEBP_QUALITY = 0.8;
+/** JPEG quality when the browser cannot make WebP (older Safari). */
+export const JPEG_QUALITY = 0.85;
 
 /** A photo ready to upload. */
 export interface ConvertedImage {
@@ -11,7 +13,7 @@ export interface ConvertedImage {
   full: Blob;
   /** A PREVIEW_SIDE preview. */
   preview: Blob;
-  /** Content type of both blobs: "image/webp", or another type if the platform can't make WebP. */
+  /** Content type of both blobs: "image/webp", or "image/jpeg" where the browser can't make WebP. */
   type: string;
   width: number;
   height: number;
@@ -64,8 +66,9 @@ const browserDeps: BrowserImageDeps = {
 
 /**
  * Browser converter: decodes with createImageBitmap and encodes with
- * canvas.toBlob("image/webp", 0.8). Some browsers (older Safari) can't encode
- * WebP and return PNG instead; then `type` says so and the caller decides.
+ * canvas.toBlob("image/webp", 0.8). Browsers that can't encode WebP (older
+ * Safari) return PNG instead; then both images are made again as JPEG, which
+ * every browser can encode and which is far smaller than PNG.
  */
 export function browserImageConverter(deps: BrowserImageDeps = browserDeps): ImageConverter {
   return {
@@ -75,6 +78,11 @@ export function browserImageConverter(deps: BrowserImageDeps = browserDeps): Ima
         const big = fitWithin(src.width, src.height, MAX_IMAGE_SIDE);
         const small = fitWithin(src.width, src.height, PREVIEW_SIDE);
         const full = await deps.encode(src, big.width, big.height, "image/webp", WEBP_QUALITY);
+        if (full.type && full.type !== "image/webp") {
+          const jpeg = await deps.encode(src, big.width, big.height, "image/jpeg", JPEG_QUALITY);
+          const jpegPreview = await deps.encode(src, small.width, small.height, "image/jpeg", JPEG_QUALITY);
+          return { full: jpeg, preview: jpegPreview, type: jpeg.type || "image/jpeg", width: big.width, height: big.height };
+        }
         const preview = await deps.encode(src, small.width, small.height, "image/webp", WEBP_QUALITY);
         return { full, preview, type: full.type || "image/webp", width: big.width, height: big.height };
       } finally {
