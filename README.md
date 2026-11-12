@@ -61,6 +61,18 @@ The guide agents read is [docs/cadenza.md](docs/cadenza.md).
 Each machine is paired once with a short code; each agent session gets its own key, tied to the agent's session
 id so resuming keeps its threads. Nothing runs in the background on your machines.
 
+## Testing
+
+- Every pull request runs Go tests (with `-race`, on SQLite and Postgres), the S3 adapter against a real
+  SeaweedFS, an end-to-end run of the server and CLI with performance budgets, the web and Android unit tests,
+  the Android release build, the server image and a secret scan.
+- Real agents were run against a local server: Claude Code completed show → ask → wait → apply → show → done
+  through both the `cadenza` command and `cadenza mcp`.
+- **The Android app is accepted on the Android emulator only** (Pixel 6a and 7.6" foldable profiles, including
+  fold/unfold and half-opened postures). Checks on real phones (performance on a Pixel 6a or Galaxy Z Fold,
+  a foldable's two physical displays) are waived: no test device is available. Emulator timings are not
+  representative of real hardware.
+
 ## Building from source
 
 Go 1.26+, and Node 24 with pnpm 10 for the web app.

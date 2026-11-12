@@ -416,3 +416,28 @@ func TestTemplateImagePreviewsAreRecorded(t *testing.T) {
 		t.Fatalf("a missing preview must be refused: %v", err)
 	}
 }
+
+func TestAckSpecificReplies(t *testing.T) {
+	f := setup(t)
+	ask, _ := f.Review.Ask(ctx, f.a, spec.AskInput{Title: "T", Text: "q?", Choices: []string{"a", "b"}, RetryID: "q1"})
+	out, _ := f.Review.Answer(ctx, f.owner, ask.QuestionID, spec.AnswerInput{Choice: "a"})
+	show, _ := f.Review.Show(ctx, f.a, spec.ShowInput{Title: "x", RetryID: "r1", Attachments: []spec.Attachment{f.uiChange(t)}})
+	f.Review.AddReply(ctx, f.owner, spec.ReplyInput{PostID: show.PostID, Kind: spec.ReplyNote, Text: "later note"})
+	_, other := f.Session(t, f.mk, "session-other")
+	if err := f.Review.AckReplies(ctx, other, 0, []string{out.ReplyID}); !kernel.Is(err, kernel.KindNotFound) {
+		t.Fatalf("another session acknowledged the reply: %v", err)
+	}
+	if err := f.Review.AckReplies(ctx, f.a, 0, []string{out.ReplyID}); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.Review.AckReplies(ctx, f.a, 0, []string{out.ReplyID}); err != nil {
+		t.Fatal("acknowledging twice is fine")
+	}
+	resp, _ := f.Review.Responses(ctx, f.a)
+	if len(resp.Items) != 1 || resp.Items[0].Text != "later note" {
+		t.Fatalf("only the unacknowledged note should remain: %+v", resp.Items)
+	}
+	if err := f.Review.AckReplies(ctx, f.a, 0, make([]string, 201)); !kernel.Is(err, kernel.KindInvalid) {
+		t.Fatal("too many ids accepted")
+	}
+}

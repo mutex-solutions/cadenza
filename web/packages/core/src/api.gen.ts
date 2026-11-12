@@ -2,6 +2,7 @@
 
 export interface AckInput {
   cursor: number;
+  reply_ids?: string[];
 }
 
 export interface AgentReplyInput {
@@ -439,7 +440,7 @@ export const endpoints = {
   "ask": { method: "POST", path: "/v1/questions", auth: "session", summary: "Ask the owner a question, optionally with choices. Returns the question id at once; use wait to get the answer." },
   "wait": { method: "GET", path: "/v1/questions/{id}/wait", auth: "session", summary: "Wait for an answer to a question. The server holds the request up to 30 s; call again to keep waiting." },
   "responses": { method: "GET", path: "/v1/responses", auth: "session", summary: "Everything the owner sent since the last acknowledged check: what to do next, then each reply." },
-  "responses-ack": { method: "POST", path: "/v1/responses/ack", auth: "session", summary: "Acknowledge responses up to a cursor, after their files are saved." },
+  "responses-ack": { method: "POST", path: "/v1/responses/ack", auth: "session", summary: "Acknowledge responses up to a cursor, or specific replies, after their files are saved." },
   "reply": { method: "POST", path: "/v1/replies/{id}/agent-reply", auth: "session", summary: "Answer one of the owner's comments, e.g. \"fixed in round 2\"." },
   "done": { method: "POST", path: "/v1/threads/{id}/done", auth: "session", summary: "Mark a thread ready for review: the work is finished." },
   "threads": { method: "GET", path: "/v1/threads", auth: "any", summary: "List threads. For an agent: open threads on its machine, which it may continue." },

@@ -16,7 +16,7 @@ var Endpoints = []Endpoint{
 		Summary: "Everything the owner sent since the last acknowledged check: what to do next, then each reply.",
 		Output:  ResponsesOutput{}},
 	{Name: "responses-ack", Method: "POST", Path: "/v1/responses/ack", Auth: AuthSession, Agent: true,
-		Summary: "Acknowledge responses up to a cursor, after their files are saved.",
+		Summary: "Acknowledge responses up to a cursor, or specific replies, after their files are saved.",
 		Input:   AckInput{}},
 	{Name: "reply", Method: "POST", Path: "/v1/replies/{id}/agent-reply", Auth: AuthSession, Agent: true,
 		Summary: "Answer one of the owner's comments, e.g. \"fixed in round 2\".",

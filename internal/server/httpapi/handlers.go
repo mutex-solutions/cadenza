@@ -50,7 +50,7 @@ func (a *API) handlers() map[string]handler {
 			if err := decode(r, &in); err != nil {
 				return err
 			}
-			return done(w, a.d.Review.Ack(r.Context(), actor(p), in.Cursor))
+			return done(w, a.d.Review.AckReplies(r.Context(), actor(p), in.Cursor, in.ReplyIDs))
 		},
 		"reply": func(w http.ResponseWriter, r *http.Request, p *access.Principal) error {
 			var in spec.AgentReplyInput

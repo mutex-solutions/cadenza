@@ -227,12 +227,14 @@ func TestShowAskWaitResponses(t *testing.T) {
 	if err != nil || string(saved) != "photo-bytes" {
 		t.Fatalf("photo not saved: %v %q", err, saved)
 	}
-	resp := w.mustRun("responses")
-	if items := resp["items"].([]any); len(items) != 1 || !strings.HasPrefix(resp["next_step"].(string), "Use the answers") {
-		t.Fatalf("responses %v", resp)
-	}
+	// wait acknowledged the answer after saving the photo: responses does not
+	// repeat it, and the owner's app shows it as delivered.
 	if items := w.mustRun("responses")["items"].([]any); len(items) != 0 {
-		t.Fatal("responses must be acknowledged after files are saved")
+		t.Fatalf("the answer wait returned must not come back in responses: %v", items)
+	}
+	tv, _ := w.Review.ThreadView(context.Background(), w.owner, thread)
+	if len(tv.Replies) != 1 || !tv.Replies[0].Delivered {
+		t.Fatalf("the answer must show as delivered: %+v", tv.Replies)
 	}
 	threads := w.mustRun("threads")["threads"].([]any)
 	if len(threads) != 1 {

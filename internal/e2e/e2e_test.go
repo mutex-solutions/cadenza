@@ -255,8 +255,9 @@ func TestDoneWhenScenario(t *testing.T) {
 	}
 
 	// The agent carries on: reads everything, shows round 2 and finishes.
+	// wait already handed over (and acknowledged) the answer, so responses has nothing new.
 	resp := s.mustCadenza("responses")
-	if !strings.HasPrefix(resp["next_step"].(string), "Use the answers") {
+	if !strings.HasPrefix(resp["next_step"].(string), "Nothing new") {
 		t.Fatalf("responses %v", resp)
 	}
 	s.mustCadenza("show", "--title", "Round 2: promo field in bold", "--template", "ui-change",
