@@ -1,0 +1,3 @@
+# The app on Google Play. Change it only if you publish under another package name
+# (it must match android.package in app.json).
+package_name(ENV.fetch("PLAY_PACKAGE_NAME", "dev.cadenza.app"))

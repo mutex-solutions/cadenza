@@ -45,6 +45,14 @@ jobs:
         working-directory: web
         run: pnpm install --frozen-lockfile
 
+      - name: Version for this build
+        env:
+          TAG_INPUT: ${{ inputs.tag }}
+        run: |
+          ref="${TAG_INPUT:-$GITHUB_REF_NAME}"
+          case "$ref" in v*) echo "CADENZA_VERSION_NAME=${ref#v}" >> "$GITHUB_ENV" ;; esac
+          echo "CADENZA_VERSION_CODE=$((1000000 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+
       - name: Generate the native project
         working-directory: web/apps/android
         env:

@@ -1,0 +1,4 @@
+# fastlane uploads the Android App Bundle to Google Play (see docs/android-play-setup.md).
+source "https://rubygems.org"
+
+gem "fastlane", "2.241.2"

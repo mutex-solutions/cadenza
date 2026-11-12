@@ -1,0 +1,119 @@
+name: Android to Google Play
+
+# Builds a signed Android App Bundle and uploads it to a Google Play testing
+# track. Runs on version tags (internal track) or by hand (pick the track).
+# Needs the secrets listed in docs/android-play-setup.md; without them it
+# stops with a notice instead of failing.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      track:
+        description: "Play track"
+        type: choice
+        options: [internal, alpha, beta]
+        default: internal
+      release_status:
+        description: "completed, or draft until the app's first release has been reviewed"
+        type: choice
+        options: [completed, draft]
+        default: completed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-play
+  cancel-in-progress: false
+
+jobs:
+  aab:
+    name: Build and upload the AAB
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      HAS_SECRETS: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON != '' && secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 != '' }}
+    steps:
+      - name: Check the Play secrets are set
+        if: env.HAS_SECRETS != 'true'
+        run: echo "::notice::Google Play secrets are not set; skipping. See docs/android-play-setup.md."
+
+      - uses: actions/checkout@v6
+        if: env.HAS_SECRETS == 'true'
+
+      - name: Version for this build
+        if: env.HAS_SECRETS == 'true'
+        run: |
+          # versionCode must grow with every upload: this workflow's run number, offset
+          # so it stays above any code uploaded by hand (keep the offset as it is).
+          code=$((1000000 + GITHUB_RUN_NUMBER))
+          if [ "${GITHUB_REF_TYPE}" = "tag" ]; then name="${GITHUB_REF_NAME#v}"; else name="0.0.0-dev.${GITHUB_RUN_NUMBER}"; fi
+          echo "CADENZA_VERSION_CODE=$code" >> "$GITHUB_ENV"
+          echo "CADENZA_VERSION_NAME=$name" >> "$GITHUB_ENV"
+          echo "PLAY_RELEASE_NAME=$name ($code)" >> "$GITHUB_ENV"
+          echo "Building $name ($code)"
+
+      - uses: actions/setup-java@v5
+        if: env.HAS_SECRETS == 'true'
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: pnpm/action-setup@v5
+        if: env.HAS_SECRETS == 'true'
+        with:
+          package_json_file: web/package.json
+
+      - uses: actions/setup-node@v6
+        if: env.HAS_SECRETS == 'true'
+        with:
+          node-version-file: web/.nvmrc
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Decode the upload key
+        if: env.HAS_SECRETS == 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          echo "CADENZA_UPLOAD_STORE_FILE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+
+      - name: Build the signed AAB
+        if: env.HAS_SECRETS == 'true'
+        env:
+          CADENZA_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+          CADENZA_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          CADENZA_UPLOAD_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+        run: |
+          cd web && pnpm install --frozen-lockfile
+          cd apps/android && CI=1 npx expo prebuild --platform android --no-install
+          cd android && ./gradlew bundleRelease -PreactNativeArchitectures=arm64-v8a,armeabi-v7a,x86_64 --no-daemon
+          keytool -printcert -jarfile app/build/outputs/bundle/release/app-release.aab | grep -q "Owner:" || { echo "AAB is not signed"; exit 1; }
+          if keytool -printcert -jarfile app/build/outputs/bundle/release/app-release.aab | grep -q "CN=Android Debug"; then
+            echo "::error::The AAB is signed with the debug key; check the ANDROID_UPLOAD_* secrets."; exit 1
+          fi
+
+      - uses: ruby/setup-ruby@v1.335.0
+        if: env.HAS_SECRETS == 'true'
+        with:
+          ruby-version: "3.3"
+          working-directory: web/apps/android
+          bundler-cache: false
+
+      - name: Upload to Google Play
+        if: env.HAS_SECRETS == 'true'
+        working-directory: web/apps/android
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          PLAY_TRACK: ${{ inputs.track || 'internal' }}
+          PLAY_RELEASE_STATUS: ${{ inputs.release_status || 'completed' }}
+        run: |
+          gem install bundler --no-document
+          bundle install
+          bundle exec fastlane android upload aab:android/app/build/outputs/bundle/release/app-release.aab
+
+      - name: Remove the upload key
+        if: always() && env.HAS_SECRETS == 'true'
+        run: rm -f "$RUNNER_TEMP/upload.jks"
