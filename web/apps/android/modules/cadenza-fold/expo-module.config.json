@@ -1,0 +1,6 @@
+{
+  "platforms": ["android"],
+  "android": {
+    "modules": ["dev.cadenza.fold.CadenzaFoldModule"]
+  }
+}
