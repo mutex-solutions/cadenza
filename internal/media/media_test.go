@@ -18,7 +18,7 @@ func TestFileRefValidate(t *testing.T) {
 		"bad sha":      {SHA256: "xyz", Size: 1, Type: TypeWebP, Name: "a"},
 		"upper sha":    {SHA256: strings.ToUpper(sha), Size: 1, Type: TypeWebP, Name: "a"},
 		"empty":        {SHA256: sha, Size: 0, Type: TypeWebP, Name: "a"},
-		"bad type":     {SHA256: sha, Size: 1, Type: "image/png", Name: "a.png"},
+		"bad type":     {SHA256: sha, Size: 1, Type: "image/gif", Name: "a.gif"},
 		"video limit":  {SHA256: sha, Size: MaxVideoBytes + 1, Type: TypeMP4, Name: "a.mp4"},
 		"page limit":   {SHA256: sha, Size: MaxPageBytes + 1, Type: TypeHTML, Name: "a.html"},
 		"path in name": {SHA256: sha, Size: 1, Type: TypePDF, Name: "../a.pdf"},
@@ -33,9 +33,18 @@ func TestFileRefValidate(t *testing.T) {
 }
 
 func TestPNGFixMessage(t *testing.T) {
-	err := FileRef{SHA256: sha, Size: 1, Type: "image/png", Name: "a.png"}.Validate()
+	err := FileRef{SHA256: sha, Size: 1, Type: "image/gif", Name: "a.gif"}.Validate()
 	if !strings.Contains(err.Error(), "fix: use image/webp") {
 		t.Fatalf("missing exact fix: %v", err)
+	}
+}
+
+func TestOwnerPhotoFallbackTypes(t *testing.T) {
+	for _, typ := range []string{TypeJPEG, TypePNG} {
+		ref := FileRef{SHA256: sha, Size: 1000, Type: typ, Name: "photo"}
+		if err := ref.Validate(); err != nil || KindOf(typ) != KindImage {
+			t.Errorf("%s: owner photos from browsers without WebP must be stored as images: %v", typ, err)
+		}
 	}
 }
 

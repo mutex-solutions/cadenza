@@ -2,6 +2,7 @@ package template
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/mutex-solutions/cadenza/internal/media"
@@ -62,5 +63,18 @@ func TestWantType(t *testing.T) {
 	if wantType(media.KindImage) != media.TypeWebP || wantType(media.KindVideo) != media.TypeMP4 ||
 		wantType(media.KindWebpage) != media.TypeHTML || wantType("") != "" {
 		t.Fatal("wantType wrong")
+	}
+}
+
+// JPEG and PNG are accepted for the owner's photos, but template image slots
+// still require WebP: agents always convert, so posts load fast everywhere.
+func TestImageSlotsStillRequireWebP(t *testing.T) {
+	d, _ := Builtin("ui-change")
+	sha := "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+	for _, typ := range []string{media.TypeJPEG, media.TypePNG} {
+		data := []byte(`{"summary":"x","after":{"file":{"sha256":"` + sha + `","size":10,"type":"` + typ + `","name":"a"}}}`)
+		if _, err := d.Validate(data, Remote); err == nil || !strings.Contains(err.Error(), "image/webp") {
+			t.Errorf("%s accepted in an image slot: %v", typ, err)
+		}
 	}
 }

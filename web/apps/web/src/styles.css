@@ -81,6 +81,12 @@ p { margin: 0 0 8px; }
 .nav { display: flex; gap: 4px; margin-left: auto; }
 .nav a { color: var(--muted); text-decoration: none; padding: 6px 10px; border-radius: 8px; font-size: 14px; }
 .nav a[aria-current="page"] { color: var(--text); background: var(--surface-2); }
+/* Narrow phones and a foldable's cover screen (under 380 px): tighter top bar so it never scrolls sideways. */
+@media (max-width: 379px) {
+  .topbar-inner { gap: 6px; padding: 8px 10px; }
+  .nav { gap: 0; min-width: 0; }
+  .nav a { padding: 6px 7px; font-size: 13px; }
+}
 .conn { font-size: 12px; color: var(--faint); display: flex; align-items: center; gap: 6px; }
 .conn::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
 .conn[data-state="live"]::before { background: var(--good); }

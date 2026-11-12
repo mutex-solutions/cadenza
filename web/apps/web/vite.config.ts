@@ -19,5 +19,7 @@ export default defineConfig({
   test: {
     environment: "happy-dom",
     setupFiles: ["./src/test/setup.ts"],
+    // Let styles.test.ts read the real stylesheet (other CSS stays stubbed).
+    css: { include: [/styles\.css/] },
   },
 });

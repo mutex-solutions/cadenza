@@ -29,13 +29,15 @@ function storedType(file: File): string {
   if (file.type === "video/mp4") return "video/mp4";
   if (file.type === "application/pdf") return "application/pdf";
   if (file.type === "image/webp") return "image/webp";
+  if (file.type === "image/jpeg") return "image/jpeg";
+  if (file.type === "image/png") return "image/png";
   return "application/octet-stream";
 }
 
 /**
  * Prepares picked files for upload. Photos are converted to WebP (max 2560 px,
- * plus a 640 px preview) on this device; if the browser can't make WebP the
- * original is sent as a plain file the agent still receives.
+ * plus a 640 px preview) on this device, or to JPEG where the browser can't
+ * make WebP (older Safari). If conversion fails, the original is sent.
  */
 export async function toUploadItems(files: File[], converter: ImageConverter): Promise<UploadItem[]> {
   const out: UploadItem[] = [];
@@ -43,8 +45,9 @@ export async function toUploadItems(files: File[], converter: ImageConverter): P
     if (f.type.startsWith("image/")) {
       try {
         const img = await converter.toWebP(f);
-        if (img.type === "image/webp") {
-          out.push({ data: img.full, name: withExtension(f.name || "photo", "webp"), type: "image/webp", preview: img.preview });
+        if (img.type === "image/webp" || img.type === "image/jpeg") {
+          const ext = img.type === "image/webp" ? "webp" : "jpg";
+          out.push({ data: img.full, name: withExtension(f.name || "photo", ext), type: img.type, preview: img.preview });
           continue;
         }
       } catch {

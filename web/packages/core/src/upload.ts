@@ -17,9 +17,9 @@ export async function sha256Hex(data: Blob | ArrayBuffer | Uint8Array): Promise<
 export interface UploadItem {
   data: Blob;
   name: string;
-  /** Content type; must be one the server stores (image/webp, video/mp4, text/html, application/pdf, application/octet-stream). */
+  /** Content type; must be one the server stores (image/webp, image/jpeg, image/png, video/mp4, text/html, application/pdf, application/octet-stream). */
   type: string;
-  /** A small WebP preview for images; uploaded too and linked as preview_sha256. */
+  /** A small preview for images (same type as the image); uploaded too and linked as preview_sha256. */
   preview?: Blob;
 }
 
@@ -49,7 +49,8 @@ export async function uploadFiles(client: Client, items: UploadItem[], opts: Upl
     const ref = await fileRef(it.data, it.name, it.type);
     if (it.preview) {
       const base = it.name.replace(/\.[^.]+$/, "");
-      const pref = await fileRef(it.preview, `${base}.preview.webp`, "image/webp");
+      const jpeg = it.type === "image/jpeg";
+      const pref = await fileRef(it.preview, `${base}.preview.${jpeg ? "jpg" : "webp"}`, jpeg ? "image/jpeg" : "image/webp");
       ref.preview_sha256 = pref.sha256;
       all.push({ ref: pref, data: it.preview });
     }

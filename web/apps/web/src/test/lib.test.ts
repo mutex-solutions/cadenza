@@ -51,13 +51,16 @@ describe("toUploadItems", () => {
       ["logs.zip", "application/octet-stream", false],
     ]);
   });
-  it("sends the original as a plain file when the browser can't make WebP", async () => {
-    const png = { toWebP: vi.fn(async (b: Blob) => ({ full: b, preview: b, type: "image/png", width: 1, height: 1 })) };
-    const items = await toUploadItems([new File(["x"], "a.png", { type: "image/png" })], png);
-    expect(items[0]!.type).toBe("application/octet-stream");
-    expect(items[0]!.name).toBe("a.png");
+  it("sends JPEG with a preview when the browser can't make WebP", async () => {
+    const jpeg = { toWebP: vi.fn(async (b: Blob) => ({ full: b, preview: b, type: "image/jpeg", width: 1, height: 1 })) };
+    const items = await toUploadItems([new File(["x"], "IMG_2.HEIC", { type: "image/heic" })], jpeg);
+    expect(items.map((i) => [i.name, i.type, !!i.preview])).toEqual([["IMG_2.jpg", "image/jpeg", true]]);
+  });
+  it("sends the original photo as an image when conversion fails", async () => {
     const broken = { toWebP: vi.fn(async () => Promise.reject(new Error("decode"))) };
-    expect((await toUploadItems([new File(["x"], "b.jpg", { type: "image/jpeg" })], broken))[0]!.type).toBe("application/octet-stream");
+    expect((await toUploadItems([new File(["x"], "b.jpg", { type: "image/jpeg" })], broken))[0]!.type).toBe("image/jpeg");
+    expect((await toUploadItems([new File(["x"], "c.png", { type: "image/png" })], broken))[0]!.type).toBe("image/png");
+    expect((await toUploadItems([new File(["x"], "d.heic", { type: "image/heic" })], broken))[0]!.type).toBe("application/octet-stream");
   });
 });
 

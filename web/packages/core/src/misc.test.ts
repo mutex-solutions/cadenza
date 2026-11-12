@@ -57,9 +57,19 @@ describe("image", () => {
     expect(encode.mock.calls[0]!.slice(1)).toEqual([2560, 1920, "image/webp", 0.8]);
     expect(close).toHaveBeenCalled();
   });
-  it("reports when the platform made PNG instead of WebP", async () => {
-    const conv = browserImageConverter({ decode: async () => ({ width: 10, height: 10 }), encode: async () => new Blob(["p"], { type: "image/png" }) });
-    expect((await conv.toWebP(new Blob(["x"]))).type).toBe("image/png");
+  it("makes JPEG instead when the browser can't make WebP (it returns PNG)", async () => {
+    // Like older Safari: asked for WebP, it encodes PNG; JPEG works.
+    const encode = vi.fn(async (_s: unknown, w: number, h: number, type: string, _q: number) =>
+      new Blob([`${w}x${h}`], { type: type === "image/webp" ? "image/png" : type }),
+    );
+    const conv = browserImageConverter({ decode: async () => ({ width: 4000, height: 3000 }), encode });
+    const out = await conv.toWebP(new Blob(["x"]));
+    expect(out.type).toBe("image/jpeg");
+    expect(out.full.type).toBe("image/jpeg");
+    expect(out.preview.type).toBe("image/jpeg");
+    expect(await out.preview.text()).toBe("640x480");
+    expect(encode.mock.calls.map((c) => c[3])).toEqual(["image/webp", "image/jpeg", "image/jpeg"]);
+    expect(encode.mock.calls[1]![4]).toBe(0.85);
   });
 });
 

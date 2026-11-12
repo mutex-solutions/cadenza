@@ -51,6 +51,23 @@ describe("uploadFiles", () => {
     ]);
   });
 
+  it("names and types a JPEG photo's preview as JPEG", async () => {
+    const full = new Blob(["jpeg-full"], { type: "image/jpeg" });
+    const preview = new Blob(["jpeg-small"], { type: "image/jpeg" });
+    let sent: { name: string; type: string }[] = [];
+    const api = fakeFetch({
+      "POST /v1/uploads": (call) => {
+        sent = (call.body as { files: { name: string; type: string }[] }).files;
+        return { body: { uploads: [], existing: [] } };
+      },
+    });
+    await uploadFiles(createClient({ fetch: api.fetch }), [{ data: full, name: "IMG_2.jpg", type: "image/jpeg", preview }]);
+    expect(sent.map((f) => [f.name, f.type])).toEqual([
+      ["IMG_2.preview.jpg", "image/jpeg"],
+      ["IMG_2.jpg", "image/jpeg"],
+    ]);
+  });
+
   it("does nothing for an empty list", async () => {
     const api = fakeFetch({});
     expect(await uploadFiles(createClient({ fetch: api.fetch }), [])).toEqual([]);

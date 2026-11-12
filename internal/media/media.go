@@ -25,7 +25,12 @@ const (
 
 // Content types Cadenza stores. Anything else is stored as OctetStream.
 const (
-	TypeWebP        = "image/webp"
+	TypeWebP = "image/webp"
+	// TypeJPEG and TypePNG are accepted for the owner's photos from browsers
+	// that cannot make WebP (older Safari). Agents always send WebP, and
+	// template image slots require it.
+	TypeJPEG        = "image/jpeg"
+	TypePNG         = "image/png"
 	TypeMP4         = "video/mp4"
 	TypeHTML        = "text/html"
 	TypePDF         = "application/pdf"
@@ -47,7 +52,7 @@ const (
 // KindOf maps a stored content type to its kind.
 func KindOf(contentType string) Kind {
 	switch contentType {
-	case TypeWebP:
+	case TypeWebP, TypeJPEG, TypePNG:
 		return KindImage
 	case TypeMP4:
 		return KindVideo
@@ -114,7 +119,7 @@ func (f FileRef) Validate() error {
 // Allowed reports whether Cadenza stores this content type.
 func Allowed(contentType string) bool {
 	switch contentType {
-	case TypeWebP, TypeMP4, TypeHTML, TypePDF, TypeOctetStream:
+	case TypeWebP, TypeJPEG, TypePNG, TypeMP4, TypeHTML, TypePDF, TypeOctetStream:
 		return true
 	}
 	return false
