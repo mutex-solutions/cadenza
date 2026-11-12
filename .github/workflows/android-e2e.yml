@@ -1,0 +1,91 @@
+name: Android e2e
+
+# Drives the real Android app on an emulator with Maestro: a real Cadenza
+# server and the real CLI (as the agent) show work and ask; the flow logs in,
+# opens the thread and answers; the agent's `cadenza wait` must get the answer.
+# See scripts/android-e2e.sh and web/apps/android/e2e/.
+on:
+  pull_request:
+    paths:
+      - "web/apps/android/**"
+      - "web/packages/**"
+      - "web/pnpm-lock.yaml"
+      - "internal/**"
+      - "cmd/**"
+      - "scripts/android-e2e.sh"
+      - ".github/workflows/android-e2e.yml"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  maestro:
+    name: Maestro on the Android emulator
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Enable KVM for the emulator
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: pnpm/action-setup@v5
+        with:
+          package_json_file: web/package.json
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: web/.nvmrc
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Build the APK for the emulator (x86_64)
+        run: |
+          cd web && pnpm install --frozen-lockfile
+          cd apps/android && CI=1 npx expo prebuild --platform android --no-install
+          cd android && ./gradlew assembleRelease -PreactNativeArchitectures=x86_64 --no-daemon
+
+      - name: Install Maestro
+        env:
+          MAESTRO_VERSION: 2.12.0
+        run: |
+          curl -sSfL -o /tmp/maestro.zip "https://github.com/mobile-dev-inc/maestro/releases/download/cli-${MAESTRO_VERSION}/maestro.zip"
+          unzip -q /tmp/maestro.zip -d "$HOME"
+          echo "$HOME/maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Run the e2e test on the emulator
+        uses: reactivecircus/android-emulator-runner@v2.38.0
+        env:
+          MAESTRO_CLI_NO_ANALYTICS: "1"
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6a
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+          script: sh scripts/android-e2e.sh web/apps/android/android/app/build/outputs/apk/release/app-release.apk
+
+      - name: Keep Maestro's screenshots and logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: maestro-debug
+          path: ~/.maestro/tests
+          if-no-files-found: ignore

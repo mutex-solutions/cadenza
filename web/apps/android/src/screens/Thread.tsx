@@ -114,6 +114,7 @@ export function ThreadScreen(props: { id: string; embedded?: boolean }) {
         </View>
       ) : (
         <Pressable
+          testID="reply-bar"
           accessibilityRole="button"
           onPress={() => setPanel(true)}
           style={[styles.bar, { backgroundColor: t.open_questions ? colors.accent : colors.surface, borderTopColor: colors.line }]}

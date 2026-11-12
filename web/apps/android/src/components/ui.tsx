@@ -2,13 +2,14 @@ import type { ReactNode } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from "react-native";
 import { useTheme } from "../theme";
 
-export function Button(props: { title: string; onPress: () => void; kind?: "primary" | "plain" | "danger"; disabled?: boolean; busy?: boolean }) {
+export function Button(props: { title: string; onPress: () => void; kind?: "primary" | "plain" | "danger"; disabled?: boolean; busy?: boolean; testID?: string }) {
   const { colors } = useTheme();
   const kind = props.kind ?? "plain";
   const bg = kind === "primary" ? colors.accent : "transparent";
   const fg = kind === "primary" ? colors.accentText : kind === "danger" ? colors.danger : colors.accent;
   return (
     <Pressable
+      testID={props.testID}
       accessibilityRole="button"
       accessibilityState={{ disabled: !!props.disabled, busy: !!props.busy }}
       disabled={props.disabled || props.busy}

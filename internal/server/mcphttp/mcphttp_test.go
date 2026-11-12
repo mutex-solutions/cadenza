@@ -111,12 +111,14 @@ func TestCloudAgentFlow(t *testing.T) {
 		t.Fatalf("answered wait: %s", out)
 	}
 	out, _ = call(t, cs, "responses", map[string]any{})
-	if !strings.Contains(out, `"kind":"answer"`) {
-		t.Fatalf("responses: %s", out)
-	}
-	out, _ = call(t, cs, "responses", map[string]any{})
 	if strings.Contains(out, `"kind":"answer"`) {
-		t.Fatal("responses must be acknowledged once returned")
+		t.Fatalf("the answer wait returned must not come back in responses: %s", out)
+	}
+	owner2, _ := e.Owner(t)
+	threads, _ := e.Review.Inbox(context.Background(), owner2, false)
+	v, _ := e.Review.ThreadView(context.Background(), owner2, threads.Threads[0].ID)
+	if !v.Replies[0].Delivered {
+		t.Fatal("the answer must show as delivered after wait returned it")
 	}
 	if out, isErr = call(t, cs, "done", map[string]any{}); isErr {
 		t.Fatalf("done: %s", out)

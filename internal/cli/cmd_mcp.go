@@ -91,7 +91,7 @@ func (b *localBackend) Wait(ctx context.Context, id string, d time.Duration) (an
 		return nil, err
 	}
 	if out.Answer != nil {
-		if err := b.a.saveResponseFiles(ctx, out.Answer); err != nil {
+		if err := c.deliverAnswer(ctx, out.Answer); err != nil {
 			return nil, err
 		}
 	}

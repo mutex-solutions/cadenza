@@ -32,6 +32,13 @@ Releases are built by GoReleaser when a version tag is pushed.
 
 `install.sh`, `install.ps1` and `brew install mutex-solutions/tap/cadenza` read from that release.
 
+## Release notes
+
+Each release note ends with this paragraph until real-device testing is available:
+
+> Android: tested on the Android emulator only (Pixel 6a and foldable profiles). Real-device checks are
+> waived; emulator timings are not representative of real phones.
+
 ## Version
 
 The version comes from the tag through `-ldflags -X main.Version`. Check it after a release:
