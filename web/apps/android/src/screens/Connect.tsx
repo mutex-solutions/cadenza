@@ -54,11 +54,11 @@ export function ConnectScreen(props: { session: SessionStore; onConnected: (s: S
           Cadenza
         </Text>
         <Text style={[styles.lead, { color: colors.muted }]}>See what your coding agents made, and answer their questions.</Text>
-        <Field label="Server address" value={url} onChangeText={setUrl} placeholder="https://cadenza.example.com" autoCapitalize="none" autoCorrect={false} keyboardType="url" inputMode="url" />
-        <Field label="Password" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" onSubmitEditing={connect} />
+        <Field testID="server-url" label="Server address" value={url} onChangeText={setUrl} placeholder="https://cadenza.example.com" autoCapitalize="none" autoCorrect={false} keyboardType="url" inputMode="url" />
+        <Field testID="password" label="Password" value={password} onChangeText={setPassword} secureTextEntry autoCapitalize="none" onSubmitEditing={connect} />
         {info ? <Message>{info}</Message> : null}
         {error ? <Message kind="error">{error}</Message> : null}
-        <Button title="Log in" kind="primary" onPress={connect} busy={busy} disabled={!url || !password} />
+        <Button testID="login" title="Log in" kind="primary" onPress={connect} busy={busy} disabled={!url || !password} />
       </ScrollView>
     </KeyboardAvoidingView>
   );

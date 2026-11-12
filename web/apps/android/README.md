@@ -98,3 +98,14 @@ fold is ignored. Checked on the emulator's 7.6" foldable: book posture split at 
 hinge), back to one pane when flat, thread kept open throughout.
 
 Not covered at all without hardware: real performance and a real Galaxy Z Fold's two displays.
+
+## End-to-end test
+
+`scripts/android-e2e.sh` runs the app for real on an emulator: a Cadenza server and the `cadenza` CLI (as the agent)
+show work and ask a question, the Maestro flow `e2e/answer-question.yaml` logs in, opens the thread and taps an
+answer, and the script checks the agent's `cadenza wait` received it. CI runs it on every change to the app
+(`.github/workflows/android-e2e.yml`). Locally, with an emulator booted and Maestro installed:
+
+```sh
+scripts/android-e2e.sh web/apps/android/android/app/build/outputs/apk/release/app-release.apk
+```
